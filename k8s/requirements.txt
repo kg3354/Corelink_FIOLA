@@ -5,4 +5,5 @@ imageio-ffmpeg
 opencv-python-headless  
 tifffile
 Websockets
+corelink-client
 --extra-index-url https://pypi.ngc.nvidia.com

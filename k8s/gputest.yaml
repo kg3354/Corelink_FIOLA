@@ -1,0 +1,29 @@
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gpu-test
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: cuda-container
+          image: nvcr.io/nvidia/cuda:9.0-devel
+          resources:
+            limits:
+              nvidia.com/gpu: 1 # Limit 1 NVIDIA GPU
+              cpu: "2"          # Limit 1 CPU
+              
+            requests:
+              nvidia.com/gpu: 1 # Request 1 NVIDIA GPU
+              cpu: "2"          # Request 1 CPU
+      nodeSelector:
+        topology.kubernetes.io/zone: "meyer"
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
