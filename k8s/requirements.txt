@@ -1,0 +1,8 @@
+tifftools
+imageio
+numpy
+imageio-ffmpeg
+opencv-python-headless  
+tifffile
+Websockets
+--extra-index-url https://pypi.ngc.nvidia.com

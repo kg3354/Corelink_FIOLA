@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fiola-process-job
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: fiola-init-container
+        image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-process:latest
+        command: ["sh", "-c"]
+        args:
+          - |
+            python ./receive_then_fiola.py
+            tail -f /dev/null
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # Request 1 NVIDIA GPU
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+  backoffLimit: 0
