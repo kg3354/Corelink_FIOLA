@@ -20,6 +20,6 @@ cd ..
 
 
 # Files to review:
-receive_then_fiola.py
-Dockerfile
-fiola-process.yaml
+- receive_then_fiola.py
+- Dockerfile
+- fiola-process.yaml
