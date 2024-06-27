@@ -66,7 +66,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: fiola-init-container
-          image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-process-ns:latest
+          image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-process-ns:latest #ns is the version without saving to disk.
           command: ["sh", "-c"]
           args:
             - |
@@ -74,17 +74,17 @@ spec:
               tail -f /dev/null
           resources:
             limits:
-              # nvidia.com/gpu: 1  # Limit 2 NVIDIA GPUs
-              cpu: "20000m"      # Limit 10 CPUs
+              nvidia.com/gpu: 1  # Limit 1 NVIDIA GPUs
+              cpu: "5000m"      # Limit 5 CPUs
               memory: "128Gi"    # Limit 128 GiB memory
             requests:
-              # nvidia.com/gpu: 1  # Request 2 NVIDIA GPUs
-              cpu: "20000m"      # Request 10 CPUs
+              nvidia.com/gpu: 1  # Request 1 NVIDIA GPUs
+              cpu: "5000m"      # Request 5 CPUs
               memory: "128Gi"    # Request 128 GiB memory
       nodeSelector:
         topology.kubernetes.io/zone: "meyer"
-      # tolerations:
-      #   - key: nvidia.com/gpu
-      #     operator: Exists
-      #     effect: NoSchedule
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
   backoffLimit: 0
