@@ -13,11 +13,11 @@ import warnings
 from fiola.fiola import FIOLA
 import io
 import queue
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 
 warnings.filterwarnings("ignore", message="no queue or thread to delete")
 
-sys.path.append("C:/Users/29712/corelink-client/python/package/Corelink/src")
+# sys.path.append("C:/Users/29712/corelink-client/python/package/Corelink/src")
 import corelink
 
 HEADER_SIZE = 14  # Updated to include timestamp (8 bytes) + frame number (2 bytes) + chunk index (2 bytes) + total chunks (2 bytes)
@@ -43,8 +43,8 @@ incoming_frames = defaultdict(lambda: {
 # Ensure the 'results' directory exists
 os.makedirs('results', exist_ok=True)
 
-# Thread pool executor for concurrent processing
-executor = ThreadPoolExecutor(max_workers=6)  # Adjusted for 6 FIOLA objects
+# process pool executor for concurrent processing
+executor = ProcessPoolExecutor(max_workers=6)  # Adjusted for 6 FIOLA objects
 
 FIOLA_POOL_SIZE = 6  # Define the number of FIOLA objects to rotate through
 fio_objects = []
@@ -105,7 +105,7 @@ async def process_frame(fio, memmap_image, frame_idx, timestamp, processtimestam
         fio.fit_online_frame(frame_batch)
         fio.compute_estimates()
         
-        np.save(f'./results/fiola_result_ptr_{frame_idx}', fio.estimates)
+        # np.save(f'./results/fiola_result_ptr_{frame_idx}', fio.estimates)
         end_time = time()
         total_time = end_time - timestamp / 1000  # Convert timestamp back to seconds
 
