@@ -44,9 +44,9 @@ incoming_frames = defaultdict(lambda: {
 os.makedirs('results', exist_ok=True)
 
 # Thread pool executor for concurrent processing
-executor = ThreadPoolExecutor(max_workers=6)  # Adjusted for 6 FIOLA objects
+executor = ThreadPoolExecutor(max_workers=7)  # Adjusted for 6 FIOLA objects
 
-FIOLA_POOL_SIZE = 6  # Define the number of FIOLA objects to rotate through
+FIOLA_POOL_SIZE = 8  # Define the number of FIOLA objects to rotate through
 fio_objects = []
 fio_index = 0
 
@@ -106,6 +106,7 @@ async def process_frame(fio, memmap_image, frame_idx, timestamp, processtimestam
         fio.compute_estimates()
         
         # np.save(f'./results/fiola_result_ptr_{frame_idx}', fio.estimates)
+        
         end_time = time()
         total_time = end_time - timestamp / 1000  # Convert timestamp back to seconds
 
@@ -180,8 +181,10 @@ async def main():
     print("Start receiving")
     await corelink.keep_open()
     
-    await asyncio.sleep(200)
-
-    print('Finished')
+    try:
+        while True:
+            await asyncio.sleep(3600)
+    except KeyboardInterrupt:
+        print('Receiver terminated.')
 
 corelink.run(main())

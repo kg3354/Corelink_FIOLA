@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 warnings.filterwarnings("ignore", message="no queue or thread to delete")
 
-# sys.path.append("C:/Users/29712/corelink-client/python/package/Corelink/src")
+sys.path.append("C:/Users/29712/corelink-client/python/package/Corelink/src")
 import corelink
 
 HEADER_SIZE = 14  # Updated to include timestamp (8 bytes) + frame number (2 bytes) + chunk index (2 bytes) + total chunks (2 bytes)
