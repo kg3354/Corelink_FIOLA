@@ -13,7 +13,7 @@ import warnings
 from fiola.fiola import FIOLA
 import io
 import queue
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 
 warnings.filterwarnings("ignore", message="no queue or thread to delete")
 
@@ -43,8 +43,8 @@ incoming_frames = defaultdict(lambda: {
 # Ensure the 'results' directory exists
 os.makedirs('results', exist_ok=True)
 
-# process pool executor for concurrent processing
-executor = ProcessPoolExecutor(max_workers=6)  # Adjusted for 6 FIOLA objects
+# Thread pool executor for concurrent processing
+executor = ThreadPoolExecutor(max_workers=6)  # Adjusted for 6 FIOLA objects
 
 FIOLA_POOL_SIZE = 6  # Define the number of FIOLA objects to rotate through
 fio_objects = []
