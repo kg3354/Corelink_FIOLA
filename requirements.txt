@@ -1,0 +1,8 @@
+tifftools
+imageio
+numpy
+aiofiles
+opencv-python-headless  
+tifffile
+corelink-client
+ 
