@@ -187,4 +187,5 @@ async def main():
     except KeyboardInterrupt:
         print('Receiver terminated.')
 
-corelink.run(main())
+if __name__ == "__main__":
+    corelink.run(main())

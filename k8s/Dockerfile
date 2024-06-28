@@ -34,12 +34,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Install telnet
 RUN apt-get update && apt-get install -y telnet
-
-# # Clone the corelink-client repository
-# RUN git clone https://dev.hsrn.nyu.edu/corelink/corelink-client.git
-
-# # Copy the custom corelink.py to the appropriate directory
-# COPY corelink.py /usr/src/app/corelink-client/python/package/Corelink/src/corelink/corelink.py
-
+ 
 # The command to run the script, you'll overwrite this in Kubernetes deployment
 CMD ["python", "./receive_then_fiola.py"]
