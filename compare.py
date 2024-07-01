@@ -98,7 +98,7 @@ def compare_page_metadata(page1, page2):
             print(f"Tag {key}: {metadata2[key].value}") 
 
 if __name__ == "__main__": 
-    file1 = 'C:/Users/Research/Desktop/fiola/1000miniscope.tif'
+    file1 = '/Users/guobuzai/Projects/fenton_final/msCam_continuous.tif'
     #file2 = 'C:/Users/Research/Desktop/fiola/trash/combined_output_20.tif' 
-    file2 = 'C:/Users/Research/Desktop/fiola/darkminiscope.tif'
+    file2 = '/Users/guobuzai/Projects/Corelink_FIOLA/k8s/init/test_sub.tif'
     compare_tiff_files(file1, file2)
