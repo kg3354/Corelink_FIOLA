@@ -17,7 +17,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 warnings.filterwarnings("ignore", message="no queue or thread to delete")
 
-# sys.path.append("C:/Users/29712/corelink-client/python/package/Corelink/src")
 import corelink
 
 HEADER_SIZE = 14  # Updated to include timestamp (8 bytes) + frame number (2 bytes) + chunk index (2 bytes) + total chunks (2 bytes)
@@ -75,6 +74,7 @@ async def memmap_from_buffer(tiff_buffer):
             shape = tiff_series.shape
             byte_order = tif.byteorder
 
+            # Accept 1 frame input only
             shape = (1, *shape)
             logging.info(f"Shape: {shape}")
 
@@ -105,7 +105,7 @@ async def process_frame(fio, memmap_image, frame_idx, timestamp, processtimestam
         fio.fit_online_frame(frame_batch)
         fio.compute_estimates()
         
-        # np.save(f'./results/fiola_result_ptr_{frame_idx}', fio.estimates)
+        np.save(f'./results/fiola_result_ptr_{frame_idx}', fio.estimates)
         
         end_time = time()
         total_time = end_time - timestamp / 1000  # Convert timestamp back to seconds

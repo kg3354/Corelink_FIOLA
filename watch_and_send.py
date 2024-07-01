@@ -11,7 +11,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import aiofiles
 
-sys.path.append("C:/Users/29712/corelink-client/python/package/Corelink/src")
+# sys.path.append("C:/Users/29712/corelink-client/python/package/Corelink/src")
 import corelink
 
 CHUNK_SIZE = 8 * 1024  # 8 KB chunk size
@@ -140,7 +140,7 @@ async def main():
 
     asyncio.create_task(check_connection())  # Start connection validation in the background
 
-    watch_dir = os.getenv('WATCH_DIR', 'C:/Users/29712/Corelink_FIOLA/curr')
+    watch_dir = os.getenv('WATCH_DIR', './curr')
     
     loop = asyncio.get_event_loop()
     event_handler = FileHandler(loop)

@@ -38,6 +38,6 @@ def write_input_to_output(input_path, output_dir):
         print(f"An error occurred: {e}")
 
 if __name__ == "__main__":
-    input_dir = "C:/Users/29712/Corelink_FIOLA/sample/msCam_continuous_tf_2.tif"
-    output_dir = "C:/Users/29712/Corelink_FIOLA/curr"
+    input_dir = "../sample/msCam_continuous_tf_2.tif"
+    output_dir = "../curr"
     write_input_to_output(input_dir, output_dir)
