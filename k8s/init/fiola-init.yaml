@@ -59,7 +59,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: fiola-process-job
+  name: fiola-init-job
 spec:
   template:
     spec:
@@ -70,19 +70,19 @@ spec:
           command: ["sh", "-c"]
           args:
             - |
-              python ./generate_init_result.py
+              python3.8 ./generate_init_result.py
               tail -f /dev/null
           resources:
             limits:
               nvidia.com/gpu: 1  # Limit 1 NVIDIA GPUs
-              cpu: "5000m"      # Limit 5 CPUs
-              memory: "128Gi"    # Limit 128 GiB memory
+              #cpu: "5000m"      # Limit 5 CPUs
+             # memory: "128Gi"    # Limit 128 GiB memory
             requests:
               nvidia.com/gpu: 1  # Request 1 NVIDIA GPUs
-              cpu: "5000m"      # Request 5 CPUs
-              memory: "128Gi"    # Request 128 GiB memory
-      nodeSelector:
-        topology.kubernetes.io/zone: "meyer"
+              #cpu: "5000m"      # Request 5 CPUs
+             # memory: "128Gi"    # Request 128 GiB memory
+#      nodeSelector:
+#        topology.kubernetes.io/zone: "meyer"
       tolerations:
         - key: nvidia.com/gpu
           operator: Exists

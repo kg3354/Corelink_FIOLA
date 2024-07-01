@@ -142,11 +142,11 @@ def main():
     if mode == 'calcium':
         # folder = cm.paths.caiman_datadir() + '/example_movies'
 #        folder = 'C:/Users/29712/fiola/CaImAn/example_movies'
-        folder = os.getenv('MOVIE_FOLDER', '/app')
+        folder = os.getenv('MOVIE_FOLDER', '/usr/src/app')
         #fnames = folder + '/output_multi_frame99.tif'
         #fnames = folder + '/output_multi_frame_big_endian.tif'
         # fnames = folder + '/result_update270.tif'
-        fnames = folder + '/test.tif'
+        fnames = folder + '/test_sub.tif'
         fr = 30                         # sample rate of the movie
         
         mode = 'calcium'                # 'voltage' or 'calcium' fluorescence indicator
@@ -248,7 +248,7 @@ def main():
     fio = FIOLA(params=params)
     Ab = np.hstack((estimates.A.toarray(), estimates.b))
     Ab = Ab.astype(np.float32)        
-    #fio = fio.create_pipeline(mc_nn_mov, trace_fiola, template, Ab, min_mov=mov.min())
+    fio = fio.create_pipeline(mc_nn_mov, trace_fiola, template, Ab, min_mov=mov.min())
 
    # After creating the FIOLA pipeline
 
