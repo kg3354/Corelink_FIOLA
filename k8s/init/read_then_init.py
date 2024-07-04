@@ -9,8 +9,8 @@ import tifffile
 import aiofiles
 import corelink
 
-CHUNK_SIZE = 8 * 1024  # 8 KB chunk size
-HEADER_SIZE = 14  # Updated to include timestamp (8 bytes) + frame number (2 bytes) + chunk index (2 bytes) + total chunks (2 bytes)
+CHUNK_SIZE = 8* 1024  # 8 KB chunk size
+HEADER_SIZE = 20  # Updated to include timestamp (8 bytes) + frame number (4 bytes) + chunk index (4 bytes) + total chunks (4 bytes)
 VALIDATION_TIMEOUT = 15  # seconds
 RETRY_COUNT = 5  # Number of retries
 RETRY_DELAY = 0.01  # Delay in seconds between retries
@@ -50,7 +50,7 @@ async def send_file(file_data, frame_counter):
             for chunk_index in range(total_chunks):
                 chunk = file_data[chunk_index * CHUNK_SIZE:(chunk_index + 1) * CHUNK_SIZE]
                 buffer = bytearray(HEADER_SIZE + len(chunk))
-                struct.pack_into('>QHHH', buffer, 0, timestamp, frame_counter, chunk_index, total_chunks)
+                struct.pack_into('>QIII', buffer, 0, timestamp, frame_counter, chunk_index, total_chunks)
                 buffer[HEADER_SIZE:] = chunk
 
                 try:
@@ -114,7 +114,7 @@ async def process_and_send_file(file_path):
             print(f'Processing AVI file: {file_path}')
             file_data = await convert_avi_to_tiff_in_memory(file_path)
             await send_file(file_data, frame_counter)
-
+        asyncio.sleep(0.1)
         frame_counter += 1  # Increment the frame counter after processing the file
 
     except Exception as e:
@@ -126,11 +126,11 @@ async def main():
     await corelink.set_server_callback(dropped, 'dropped')
 
     await corelink.connect("Testuser", "Testpassword", "corelink.hpc.nyu.edu", 20012)
-    sender_id = await corelink.create_sender("FentonInit", "ws", "description1")
+    sender_id = await corelink.create_sender("FentonInit2", "ws", "description1")
 
     asyncio.create_task(check_connection())  # Start connection validation in the background
 
-    watch_dir = os.getenv('WATCH_DIR', './curr')
+    watch_dir = os.getenv('WATCH_DIR', '../../curr')
     
     for file_name in os.listdir(watch_dir):
         file_path = os.path.join(watch_dir, file_name)
