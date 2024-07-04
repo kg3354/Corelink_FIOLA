@@ -28,6 +28,20 @@ logging.basicConfig(format=
                     level=logging.INFO)    
 logging.info(device_lib.list_local_devices()) # if GPU is not detected, try to reinstall tensorflow with pip install tensorflow==2.5.0
 
+
+import cv2
+import glob
+
+from time import time
+
+from caiman.motion_correction import MotionCorrect
+from caiman.source_extraction.cnmf import cnmf as cnmf
+from caiman.source_extraction.cnmf import params as params
+from caiman.utils.utils import download_demo
+from caiman.summary_images import local_correlations_movie_offline
+from caiman.source_extraction.cnmf.utilities import get_file_size
+
+
 #%%    
 def run_caiman_init(fnames, pw_rigid = True, max_shifts=[6, 6], gnb=2, rf=15, K = 5, gSig = [4, 4]):
     """
@@ -100,19 +114,26 @@ def run_caiman_init(fnames, pw_rigid = True, max_shifts=[6, 6], gnb=2, rf=15, K 
     border_to_0 = 0 if mc.border_nan == 'copy' else mc.border_to_0
     fname_new = cm.save_memmap(mc.mmap_file, base_name='memmap_', order='C',
                                border_to_0=border_to_0)  # exclude borders
+    logging.info('Finished exclude borders')
     #
     Yr, dims, T = cm.load_memmap(fname_new)
     images = np.reshape(Yr.T, [T] + list(dims), order='F')
+    logging.info('Finished reshapping borders')
+
+
     #  restart cluster to clean up memory
     cm.stop_server(dview=dview)
     c, dview, n_processes = cm.cluster.setup_cluster(
         backend='local', n_processes=None, single_thread=False)
+    logging.info('Finished restarting cluster')
+
     #
     f_F_mmap = mc.mmap_file[0]
     Cns = local_correlations_movie_offline(f_F_mmap,
                                        remove_baseline=True, window=1000, stride=1000,
                                        winSize_baseline=100, quantil_min_baseline=10,
                                        dview=dview)
+    logging.info('Finished local_correlations_movie_offline')
     Cn = Cns.max(axis=0)
     Cn[np.isnan(Cn)] = 0
     # if display_images: 
@@ -144,10 +165,12 @@ def run_caiman_init(fnames, pw_rigid = True, max_shifts=[6, 6], gnb=2, rf=15, K 
                  'ssub': ssub,
                  'tsub': tsub}
     
-    opts.change_params(params_dict=opts_dict);
+    opts.change_params(params_dict=opts_dict)
     #  RUN CNMF ON PATCHES
     cnm = cnmf.CNMF(n_processes, params=opts, dview=dview)
     cnm = cnm.fit(images)
+    logging.info('Finished CNFM on patches')
+
     #  COMPONENT EVALUATION
     min_SNR = 1.0  # signal to noise ratio for accepting a component
     rval_thr = 0.75  # space correlation threshold for accepting a component
