@@ -452,6 +452,7 @@ RUN git clone https://github.com/nel-lab/FIOLA.git && \
 RUN git clone https://github.com/flatironinstitute/CaImAn.git -b v1.9.13 && \
     cd CaImAn && \
     pip install -r requirements.txt && \
+    pip install -r requirements_gpu.txt && \
     pip install -e . && \
     cd ..
 
