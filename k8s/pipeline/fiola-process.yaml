@@ -36,11 +36,11 @@ spec:
           resources:
             limits:
               nvidia.com/gpu: 1  # Limit 1 NVIDIA GPU
-              cpu: "16"          # Limit 16 CPUs
+              cpu: "32"          # Limit 16 CPUs
               memory: "100Gi"    # Limit 100Gi memory
             requests:
               nvidia.com/gpu: 1  # Request 1 NVIDIA GPU
-              cpu: "16"           # Request 16 CPUs
+              cpu: "32"           # Request 16 CPUs
               memory: "100Gi"    # Request 100Gi memory
           env:
             - name: TF_FORCE_GPU_ALLOW_GROWTH

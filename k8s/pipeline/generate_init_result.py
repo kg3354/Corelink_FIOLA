@@ -253,7 +253,7 @@ def save_fiola_state(mc_nn_mov, trace_fiola, template, Ab, min_mov, params, file
 # The main function wraper for generate_init_result.py. When it is being called by passing file name, it will run caiman intilization on that file and process it using fiola.
 # The final fiola initialization result will be saved to kubernetes persistent volume in calcium mode.
 def caiman_process(fnames):
-
+    mode = 'calcium'
     #folder = os.getenv('MOVIE_FOLDER', '/usr/src/app')
     # fnames = folder + '/test_sub.tif'
 
@@ -278,7 +278,7 @@ def caiman_process(fnames):
     options = {
         'fnames': fnames,
         'fr': fr,
-        'mode': mode,
+        'mode': mode, 
         'num_frames_init': num_frames_init,
         'num_frames_total': num_frames_total,
         'offline_batch': offline_batch,
