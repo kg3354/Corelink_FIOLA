@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fiola-pvc
+  namespace: fenton-neuroscience
+spec:
+  storageClassName: csi-rbd-3-ssd-sc  # Request 200 GB
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fiola-init-job
+  namespace: fenton-neuroscience
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      volumes:
+        - name: persistent-storage
+          persistentVolumeClaim:
+            claimName: fiola-pvc
+      containers:
+        - name: fiola-init-container
+          image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-pipeline:latest
+          command: ["sh", "-c"]
+          args:
+            - |
+              export PYTHONPATH=/usr/src/app/FIOLA:/usr/src/app/CaImAn:/usr/local/lib/python3.8/dist-packages:${PYTHONPATH}
+              python3.8 ./receive_then_fiola.py
+              tail -f /dev/null
+          resources:
+            limits:
+              nvidia.com/gpu: 1  # Limit 1 NVIDIA GPU
+              cpu: "16"          # Limit 16 CPUs
+              memory: "100Gi"    # Limit 100Gi memory
+            requests:
+              nvidia.com/gpu: 1  # Request 1 NVIDIA GPU
+              cpu: "16"           # Request 16 CPUs
+              memory: "100Gi"    # Request 100Gi memory
+          env:
+            - name: TF_FORCE_GPU_ALLOW_GROWTH
+              value: "true"
+            - name: TF_GPU_THREAD_MODE
+              value: "gpu_private"
+          volumeMounts:
+            - name: persistent-storage
+              mountPath: /persistent_storage
+      nodeSelector:
+        # topology.kubernetes.io/zone: "wwh"
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+  backoffLimit: 0
