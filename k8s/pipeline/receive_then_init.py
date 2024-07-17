@@ -153,6 +153,7 @@ import io
 import corelink
 from corelink.resources.control import subscribe_to_stream
 from generate_init_result import caiman_process
+from PIL import Image
 
 HEADER_SIZE = 14  # Updated to include timestamp (8 bytes) + frame number (2 bytes) + chunk index (2 bytes) + total chunks (2 bytes)
 INACTIVITY_TIMEOUT = 10  # seconds
@@ -184,13 +185,21 @@ last_update_time = time()
 # Ensure the 'data' directory exists
 os.makedirs('data', exist_ok=True)
 
+# async def save_session_tiff(frames, session_start_time):
+# 	tiff_filename = f'./data/session_{strftime("%Y%m%d_%H%M%S", localtime(session_start_time))}.tif'
+# 	with tifffile.TiffWriter(tiff_filename, bigtiff=True) as tif_writer:
+# 		for frame in frames:
+#             # Convert the frame data from bytes to numpy array before writing
+# 			image_data = np.array(tifffile.imread(io.BytesIO(frame)))
+# 			tif_writer.write(image_data.squeeze(), contiguous=True)
+# 	print(f"Session saved as {tiff_filename}")
+# 	return tiff_filename
 async def save_session_tiff(frames, session_start_time):
-	tiff_filename = f'./data/session_{strftime("%Y%m%d_%H%M%S", localtime(session_start_time))}.tif'
-	with tifffile.TiffWriter(tiff_filename, bigtiff=True) as tif_writer:
-		for frame in frames:
-			tif_writer.write(np.array(tifffile.imread(io.BytesIO(frame))), contiguous=True)
-	print(f"Session saved as {tiff_filename}")
-	return tiff_filename
+    tiff_filename = f'./data/session_{strftime("%Y%m%d_%H%M%S", localtime(session_start_time))}.tif'
+    images = [Image.open(io.BytesIO(frame)) for frame in frames]
+    images[0].save(tiff_filename, save_all=True, append_images=images[1:], bigtiff=True)
+    print(f"Session saved as {tiff_filename}")
+    return tiff_filename
 
 async def check_inactivity():
 	global current_session_frames, current_session_start_time, last_update_time
@@ -200,7 +209,9 @@ async def check_inactivity():
 		if current_session_start_time and (current_time - last_update_time > INACTIVITY_TIMEOUT):
 			print(f"Session inactive for {INACTIVITY_TIMEOUT} seconds. Marking session as complete.")
 			tiff_filename = await save_session_tiff(current_session_frames, current_session_start_time)
-			await asyncio.get_event_loop().run_in_executor(None, caiman_process, tiff_filename)
+			print('The total pages are: ', len(tifffile.TiffFile(tiff_filename).pages))
+			print('The shape of the tiff file is: ', tifffile.TiffFile(tiff_filename).asarray().shape)
+			await asyncio.get_event_loop().run_in_executor(None, caiman_process, tiff_filename, len(tifffile.TiffFile(tiff_filename).pages))
 			await corelink.close()  # Close the corelink session
 			print("Corelink session closed due to inactivity.")
 			sys.exit()  # End the script
@@ -253,29 +264,29 @@ async def stale(response, key):
 	print(response)
 
 async def receive_then_init():
-	async def main():
-		asyncio.create_task(check_inactivity())  # Start inactivity check
+	print('Started receive_then_init')
+	asyncio.create_task(check_inactivity())  # Start inactivity check
 
-		await corelink.set_data_callback(callback)
-		await corelink.set_server_callback(update, 'update')
-		await corelink.set_server_callback(stale, 'stale')
+	await corelink.set_data_callback(callback)
+	await corelink.set_server_callback(update, 'update')
+	await corelink.set_server_callback(stale, 'stale')
 		
-		await corelink.connect("Testuser", "Testpassword", "corelink.hpc.nyu.edu", 20012)
+	await corelink.connect("Testuser", "Testpassword", "corelink.hpc.nyu.edu", 20012)
 		
-		receiver_id = await corelink.create_receiver("FentonRaw", "ws", alert=True, echo=True)
+	receiver_id = await corelink.create_receiver("FentonRaw", "ws", alert=True, echo=True)
 		
-		print(f'Receiver ID: {receiver_id}')
-		print("Start receiving initilization frames")
-		await corelink.keep_open()
+	print(f'Receiver ID: {receiver_id}')
+	print("Start receiving initilization frames")
+	await corelink.keep_open()
 		
-		try:
-			while True:
-				await asyncio.sleep(3600)
-		except KeyboardInterrupt:
-			print('Receiver terminated.')
-			await corelink.close()
+	try:
+		while True:
+			await asyncio.sleep(3600)
+	except KeyboardInterrupt:
+		print('Receiver terminated.')
+		await corelink.close()
 
-		print('Finished')
+	print('Finished')
 
-	corelink.run(main())
+# corelink.run(main())
 
