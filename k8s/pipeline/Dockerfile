@@ -56,20 +56,17 @@ RUN pip3 install --upgrade pip setuptools six && \
     pip3 install --no-cache-dir -r requirements.txt
 
 # Install specific version of TensorFlow compatible with CUDA 11.0
-RUN pip3 install tensorflow==2.4.1 typing-extensions==3.7.4.3 pytools==2020.4.4 
+#RUN pip3 install tensorflow==2.4.1 typing-extensions==3.7.4.3 pytools==2020.4.4 
 
 # Download and install FIOLA
 RUN git clone https://github.com/nel-lab/FIOLA.git && \
     cd FIOLA && \
-    pip3 install -r requirements.txt && \
     pip3 install -e . && \
     cd ..
 
 # Download and install CaImAn
 RUN git clone https://github.com/flatironinstitute/CaImAn.git -b v1.9.13 && \
     cd CaImAn && \
-    pip3 install -r requirements.txt && \
-    pip3 install -r requirements_gpu.txt && \
     pip3 install -e . && \
     cd ..
 

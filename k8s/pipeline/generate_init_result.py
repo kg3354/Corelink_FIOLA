@@ -12,7 +12,7 @@ import scipy
 from tensorflow.python.client import device_lib
 from time import time
 import pickle
-
+from datetime import datetime
 from fiola.fiolaparams import fiolaparams
 from fiola.fiola import FIOLA
 from fiola.utilities import download_demo, load, to_2D, movie_iterator
@@ -234,7 +234,8 @@ def save_fiola_state(mc_nn_mov, trace_fiola, template, Ab, min_mov, params, file
         'mov_data': mc_nn_mov
     }
     persistent_volume_path = "/persistent_storage"
-    timestamp = time().strftime("%Y%m%d%H%M%S")
+    os.makedirs(persistent_volume_path, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     filename = os.path.join(persistent_volume_path, f"{filepath}_{timestamp}.pkl")
 
     with open(filename, 'wb') as f:
@@ -252,15 +253,13 @@ def save_fiola_state(mc_nn_mov, trace_fiola, template, Ab, min_mov, params, file
 
 # The main function wraper for generate_init_result.py. When it is being called by passing file name, it will run caiman intilization on that file and process it using fiola.
 # The final fiola initialization result will be saved to kubernetes persistent volume in calcium mode.
-def caiman_process(fnames):
-
+def caiman_process(fnames, frames_to_process):
+    mode = 'calcium'
     #folder = os.getenv('MOVIE_FOLDER', '/usr/src/app')
     # fnames = folder + '/test_sub.tif'
 
     # The parameters for processing. Subject to change. 
     fr = 30
-    num_frames_init = 2000
-    num_frames_total = 30000
     offline_batch = 100
     batch = 100
     flip = False
@@ -278,9 +277,9 @@ def caiman_process(fnames):
     options = {
         'fnames': fnames,
         'fr': fr,
-        'mode': mode,
-        'num_frames_init': num_frames_init,
-        'num_frames_total': num_frames_total,
+        'mode': mode, 
+        'num_frames_init': frames_to_process,
+        'num_frames_total': frames_to_process,
         'offline_batch': offline_batch,
         'batch': batch,
         'flip': flip,
@@ -296,7 +295,7 @@ def caiman_process(fnames):
         'lag': lag
     }
 
-    mov = cm.load(fnames, subindices=range(num_frames_init))
+    mov = cm.load(fnames, subindices=range(frames_to_process))
     fnames_init = fnames.split('.')[0] + '_init.tif'
     mov.save(fnames_init)
 
