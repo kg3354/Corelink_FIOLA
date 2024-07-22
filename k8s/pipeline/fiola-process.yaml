@@ -11,6 +11,7 @@ spec:
     requests:
       storage: 100Gi
 ---
+
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -31,17 +32,17 @@ spec:
           args:
             - |
               export PYTHONPATH=/usr/src/app/FIOLA:/usr/src/app/CaImAn:/usr/local/lib/python3.8/dist-packages:${PYTHONPATH}
-              python3.8 ./receive_then_fiola.py
+              numactl --cpunodebind=0 --membind=0 python3.8 ./receive_then_fiola.py
               tail -f /dev/null
           resources:
             limits:
               nvidia.com/gpu: 1  # Limit 1 NVIDIA GPU
-              cpu: "12"          # Limit 16 CPUs
-              memory: "32Gi"    # Limit 100Gi memory
+              cpu: "16"          # Limit 16 CPUs
+              memory: "64Gi"     # Limit 64Gi memory
             requests:
               nvidia.com/gpu: 1  # Request 1 NVIDIA GPU
-              cpu: "12"           # Request 16 CPUs
-              memory: "32Gi"    # Request 100Gi memory
+              cpu: "16"          # Request 16 CPUs
+              memory: "64Gi"     # Request 64Gi memory
           env:
             - name: TF_FORCE_GPU_ALLOW_GROWTH
               value: "true"
@@ -50,8 +51,15 @@ spec:
           volumeMounts:
             - name: persistent-storage
               mountPath: /persistent_storage
-      nodeSelector:
-        topology.kubernetes.io/zone: "7e12"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - "hsrn-ed10d-7e12"  # Replace with your specific node name
       tolerations:
         - key: nvidia.com/gpu
           operator: Exists

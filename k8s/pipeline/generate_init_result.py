@@ -204,34 +204,16 @@ def run_caiman_init(fnames, pw_rigid=True, max_shifts=[6, 6], gnb=2, rf=15, K=5,
     return output_file
 
 #%%    
-
-# def save_fiola_state(mc_nn_mov, trace_fiola, template, Ab, min_mov, params, filepath):
-#     fio_state = {
-#         'params': params,
-#         'trace_fiola': trace_fiola,
-#         'template': template,
-#         'Ab': Ab,
-#         'min_mov': min_mov,
-#         'mov_data': mc_nn_mov
-#     }
-#     persistent_volume_path = "/persistent_storage"
-#     timestamp = time().strftime("%Y%m%d%H%M%S")
-#     filename = os.path.join(persistent_volume_path, f"{filepath}_{timestamp}.pkl")
-
-#     with open(filename, 'wb') as f:
-#         pickle.dump(fio_state, f)
-
-#     logging.info(f"Saved state to {filename}")
-
 # Saving the fiola state to a pickle file, both locally and on persistant volume of kubernetes
-def save_fiola_state(mc_nn_mov, trace_fiola, template, Ab, min_mov, params, filepath):
+def save_fiola_state(mc_nn_mov, trace_fiola, template, Ab, min_mov, params, filepath, frames_to_process):
     fio_state = {
         'params': params,
         'trace_fiola': trace_fiola,
         'template': template,
         'Ab': Ab,
         'min_mov': min_mov,
-        'mov_data': mc_nn_mov
+        'mov_data': mc_nn_mov,
+        'frames_to_process': frames_to_process
     }
     persistent_volume_path = "/persistent_storage"
     os.makedirs(persistent_volume_path, exist_ok=True)
@@ -260,8 +242,8 @@ def caiman_process(fnames, frames_to_process):
 
     # The parameters for processing. Subject to change. 
     fr = 30
-    offline_batch = 100
-    batch = 100
+    offline_batch = 5
+    batch = 1
     flip = False
     detrend = False
     dc_param = 0.9995
@@ -350,8 +332,8 @@ def caiman_process(fnames, frames_to_process):
 
     # Creating a fiola pipeline to make sure the processing is not damaged
     fio = fio.create_pipeline(mc_nn_mov, trace_fiola, template, Ab, min_mov=mov.min())
-
+    
     # Saving the results to kubernetes persistent volume
-    save_fiola_state(mc_nn_mov, trace_fiola, template, Ab, mov.min(), params, fnames.split('.')[0] + 'pkl')
+    save_fiola_state(mc_nn_mov, trace_fiola, template, Ab, mov.min(), params, fnames.split('.')[0] + 'pkl', frames_to_process)
     print(f'The Total time for initialization is: {time() - startTime}')
 

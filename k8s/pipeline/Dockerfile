@@ -29,6 +29,9 @@ RUN apt-get update && apt-get install -y \
     libcudnn8-dev=8.0.5.39-1+cuda11.0 \
     libcupti-dev \
     gnupg \
+    nano \
+    htop \
+    numactl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

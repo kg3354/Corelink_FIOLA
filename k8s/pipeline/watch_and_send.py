@@ -13,8 +13,9 @@ import aiofiles
 
 # sys.path.append("C:/Users/29712/corelink-client/python/package/Corelink/src")
 import corelink
+from corelink.resources.control import subscribe_to_stream
 
-CHUNK_SIZE = 8 * 1024  # 8 KB chunk size
+CHUNK_SIZE = 32 * 1024  # 32 KB chunk size
 HEADER_SIZE = 14  # Updated to include timestamp (8 bytes) + frame number (2 bytes) + chunk index (2 bytes) + total chunks (2 bytes)
 VALIDATION_TIMEOUT = 15  # seconds
 RETRY_COUNT = 5  # Number of retries
@@ -23,7 +24,8 @@ validConnection = False
 frame_counter = 0  # Frame counter for sequential frame numbers
 
 async def callback(data_bytes, streamID, header):
-    print(f"Received data with length {len(data_bytes)} : {data_bytes.decode(encoding='UTF-8')}")
+    # print(f"Received data with length {len(data_bytes)} : {data_bytes.decode(encoding='UTF-8')}")
+    print(f"Received data with length {len(data_bytes)} : {data_bytes}")
 
 async def subscriber(response, key):
     global validConnection
@@ -38,6 +40,7 @@ async def dropped(response, key):
 
 async def update(response, key):
     print(f'Updating as new sender valid in the workspace: {response}')
+    await subscribe_to_stream(response['receiverID'], response['streamID'])
 
 async def stale(response, key):
     print(response)
@@ -73,9 +76,9 @@ async def send_file(file_data, frame_counter):
                     print(f"Failed to send chunk {chunk_index}/{total_chunks} for frame {frame_counter}: {e}")
                     raise
 
-                print(f'Frame {frame_counter}, Chunk {chunk_index}/{total_chunks}, Size {len(buffer)}')
+                # print(f'Frame {frame_counter}, Chunk {chunk_index}/{total_chunks}, Size {len(buffer)}')
 
-            print(f"File sent successfully.")
+            # print(f"File sent successfully.")
             return  # Exit the function on success
 
         except PermissionError as e:
