@@ -1,7 +1,7 @@
 # Corelink_FIOLA Instructions
 
-To use Corelink, FIOLA pipeline, and CaImAn locally, please refer to the files under Corelink_FIOLA main directory.
-For Kubernetes support, refer to k8s/pipeline.
+Computational steering is a cutting-edge research workflow that enhances innovation potential of scientific studies. This involves “closing the loop” on the research workflow, allowing for adjustment of parameters during the experiment at very low latencies using the latest technologies that allow for real-time research computing jobs. With the introduction of new High Performance Computing (HPC) resources into the Center for Neuroscience building such as the High Speed Research Network (HSRN) and HPCs edge Kubernetes cluster, we hope to explore this new approach to research for the department. Our goal is to develop and deploy a pipeline that processes calcium imaging data captured in real time from devices monitoring neuronal activity in rats, to detect and visualize the rats' ability to react to their surrounding environments, including brightness, moisture, smell, and beyond.
+
 
 ## Initialization:
 
@@ -23,17 +23,16 @@ pip install -e .
 cd ..
 ```
 
-The sender side should use watch_and_send.py, and the receiver should use receive_then_fiola.py.
+Dockerfile can also be referred to in order to use the processing side logic.
 
 
-# Files to review:
-
+# DAQ side:
+- watch_and_send.py
+# Kubernetes side:
 - receive_then_fiola.py
 - receive_then_init.py
 - generate_init_result.py
 - Dockerfile
 - fiola-process.yaml
 
-## Current bottole neck:
-- Offline Motion Correction
-- Online FIOLA Process using CPU
+
