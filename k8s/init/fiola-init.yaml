@@ -1,3 +1,29 @@
+# # # # # apiVersion: batch/v1
+# # # # # kind: Job
+# # # # # metadata:
+# # # # #   name: fiola-process-job
+# # # # # spec:
+# # # # #   template:
+# # # # #     spec:
+# # # # #       restartPolicy: Never
+# # # # #       containers:
+# # # # #       - name: fiola-init-container
+# # # # #         image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-process:latest
+# # # # #         command: ["sh", "-c"]
+# # # # #         args:
+# # # # #           - |
+# # # # #             python ./receive_then_fiola.py
+# # # # #             tail -f /dev/null
+# # # # #         resources:
+# # # # #           limits:
+# # # # #             nvidia.com/gpu: 1 # Request 1 NVIDIA GPU
+# # # # #       tolerations:
+# # # # #       - key: nvidia.com/gpu
+# # # # #         operator: Exists
+# # # # #         effect: NoSchedule
+# # # # #   backoffLimit: 0
+
+
 # # # # apiVersion: batch/v1
 # # # # kind: Job
 # # # # metadata:
@@ -7,50 +33,56 @@
 # # # #     spec:
 # # # #       restartPolicy: Never
 # # # #       containers:
-# # # #       - name: fiola-init-container
-# # # #         image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-process:latest
-# # # #         command: ["sh", "-c"]
-# # # #         args:
-# # # #           - |
-# # # #             python ./receive_then_fiola.py
-# # # #             tail -f /dev/null
-# # # #         resources:
-# # # #           limits:
-# # # #             nvidia.com/gpu: 1 # Request 1 NVIDIA GPU
+# # # #         - name: fiola-init-container
+# # # #           image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-process-ns:latest
+# # # #           command: ["sh", "-c"]
+# # # #           args:
+# # # #             - |
+# # # #               python ./receive_then_fiola.py
+# # # #               tail -f /dev/null
+# # # #           resources:
+# # # #             limits:
+# # # #               nvidia.com/gpu: 2 # Limit 1 NVIDIA GPU
+# # # #               cpu: "10000m"          
+# # # #               memory: "128Gi"
+# # # #             requests:
+# # # #               nvidia.com/gpu: 2 # Request 1 NVIDIA GPU
+# # # #               cpu: "10000m"    
+# # # #               memory: "128Gi"     
+# # # #       nodeSelector:
+# # # #         topology.kubernetes.io/zone: "meyer"
 # # # #       tolerations:
-# # # #       - key: nvidia.com/gpu
-# # # #         operator: Exists
-# # # #         effect: NoSchedule
+# # # #         - key: nvidia.com/gpu
+# # # #           operator: Exists
+# # # #           effect: NoSchedule
 # # # #   backoffLimit: 0
-
-
 # # # apiVersion: batch/v1
 # # # kind: Job
 # # # metadata:
-# # #   name: fiola-process-job
+# # #   name: fiola-init-job
 # # # spec:
 # # #   template:
 # # #     spec:
 # # #       restartPolicy: Never
 # # #       containers:
 # # #         - name: fiola-init-container
-# # #           image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-process-ns:latest
+# # #           image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-init:latest #ns is the version without saving to disk.
 # # #           command: ["sh", "-c"]
 # # #           args:
 # # #             - |
-# # #               python ./receive_then_fiola.py
+# # #               python3.8 ./generate_init_result.py
 # # #               tail -f /dev/null
 # # #           resources:
 # # #             limits:
-# # #               nvidia.com/gpu: 2 # Limit 1 NVIDIA GPU
-# # #               cpu: "10000m"          
-# # #               memory: "128Gi"
+# # #               nvidia.com/gpu: 1  # Limit 1 NVIDIA GPUs
+# # #               #cpu: "5000m"      # Limit 5 CPUs
+# # #              # memory: "128Gi"    # Limit 128 GiB memory
 # # #             requests:
-# # #               nvidia.com/gpu: 2 # Request 1 NVIDIA GPU
-# # #               cpu: "10000m"    
-# # #               memory: "128Gi"     
-# # #       nodeSelector:
-# # #         topology.kubernetes.io/zone: "meyer"
+# # #               nvidia.com/gpu: 1  # Request 1 NVIDIA GPUs
+# # #               #cpu: "5000m"      # Request 5 CPUs
+# # #              # memory: "128Gi"    # Request 128 GiB memory
+# # #      nodeSelector:
+# # #        topology.kubernetes.io/zone: "meyer"
 # # #       tolerations:
 # # #         - key: nvidia.com/gpu
 # # #           operator: Exists
@@ -66,23 +98,58 @@
 # #       restartPolicy: Never
 # #       containers:
 # #         - name: fiola-init-container
-# #           image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-init:latest #ns is the version without saving to disk.
+# #           image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-init:latest
 # #           command: ["sh", "-c"]
 # #           args:
 # #             - |
+# #               export PYTHONPATH=/usr/src/app/FIOLA:/usr/src/app/CaImAn:/usr/local/lib/python3.8/dist-packages:${PYTHONPATH}
 # #               python3.8 ./generate_init_result.py
 # #               tail -f /dev/null
 # #           resources:
 # #             limits:
 # #               nvidia.com/gpu: 1  # Limit 1 NVIDIA GPUs
-# #               #cpu: "5000m"      # Limit 5 CPUs
-# #              # memory: "128Gi"    # Limit 128 GiB memory
 # #             requests:
 # #               nvidia.com/gpu: 1  # Request 1 NVIDIA GPUs
-# #               #cpu: "5000m"      # Request 5 CPUs
-# #              # memory: "128Gi"    # Request 128 GiB memory
-# #      nodeSelector:
-# #        topology.kubernetes.io/zone: "meyer"
+# #       nodeSelector:
+# #         topology.kubernetes.io/zone: "wwh"
+# #       tolerations:
+# #         - key: nvidia.com/gpu
+# #           operator: Exists
+# #           effect: NoSchedule
+# #   backoffLimit: 0
+# # apiVersion: batch/v1
+# # kind: Job
+# # metadata:
+# #   name: fiola-init-job
+# # spec:
+# #   template:
+# #     spec:
+# #       restartPolicy: Never
+# #       containers:
+# #         - name: fiola-init-container
+# #           image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-init:latest
+# #           command: ["sh", "-c"]
+# #           args:
+# #             - |
+# #               export PYTHONPATH=/usr/src/app/FIOLA:/usr/src/app/CaImAn:/usr/local/lib/python3.8/dist-packages:${PYTHONPATH}
+# #               python3.8 ./generate_init_result.py
+# #               tail -f /dev/null
+# #           resources:
+# #             limits:
+# #               nvidia.com/gpu: 1  # Limit 1 NVIDIA GPUs
+# #               cpu: "16"          # Limit 16 CPUs
+# #               memory: "100Gi"    # Limit 100Gi memory
+# #             # requests:
+# #             #   nvidia.com/gpu: 1  # Request 1 NVIDIA GPUs
+# #             #   cpu: "8"           # Request 8 CPUs
+# #             #   memory: "50Gi"     # Request 50Gi memory
+# #           env:
+# #             - name: TF_FORCE_GPU_ALLOW_GROWTH
+# #               value: "true"
+# #             - name: TF_GPU_THREAD_MODE
+# #               value: "gpu_private"
+# #       nodeSelector:
+# #         topology.kubernetes.io/zone: "wwh"
 # #       tolerations:
 # #         - key: nvidia.com/gpu
 # #           operator: Exists
@@ -98,7 +165,7 @@
 #       restartPolicy: Never
 #       containers:
 #         - name: fiola-init-container
-#           image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-init:latest
+#           image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-init-gpu:latest
 #           command: ["sh", "-c"]
 #           args:
 #             - |
@@ -108,15 +175,51 @@
 #           resources:
 #             limits:
 #               nvidia.com/gpu: 1  # Limit 1 NVIDIA GPUs
+#               cpu: "16"          # Limit 16 CPUs
+#               memory: "100Gi"    # Limit 100Gi memory
 #             requests:
 #               nvidia.com/gpu: 1  # Request 1 NVIDIA GPUs
+#               cpu: "8"           # Request 8 CPUs
+#               memory: "100Gi"     # Request 50Gi memory
+#           env:
+#             - name: TF_FORCE_GPU_ALLOW_GROWTH
+#               value: "true"
+#             - name: TF_GPU_THREAD_MODE
+#               value: "gpu_private"
 #       nodeSelector:
-#         topology.kubernetes.io/zone: "wwh"
+#         topology.kubernetes.io/zone: "12wvpl"
 #       tolerations:
 #         - key: nvidia.com/gpu
 #           operator: Exists
 #           effect: NoSchedule
 #   backoffLimit: 0
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: fiola-pv
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /mnt/data  # Adjust this path based on your cluster configuration
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fiola-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -127,7 +230,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: fiola-init-container
-          image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-init:latest
+          image: registry.hsrn.nyu.edu/vip/corelink-examples/fiola-init-gpu:latest
           command: ["sh", "-c"]
           args:
             - |
@@ -136,20 +239,27 @@ spec:
               tail -f /dev/null
           resources:
             limits:
-              nvidia.com/gpu: 1  # Limit 1 NVIDIA GPUs
+              nvidia.com/gpu: 1  # Limit 1 NVIDIA GPU
               cpu: "16"          # Limit 16 CPUs
               memory: "100Gi"    # Limit 100Gi memory
-            # requests:
-            #   nvidia.com/gpu: 1  # Request 1 NVIDIA GPUs
-            #   cpu: "8"           # Request 8 CPUs
-            #   memory: "50Gi"     # Request 50Gi memory
+            requests:
+              nvidia.com/gpu: 1  # Request 1 NVIDIA GPU
+              cpu: "8"           # Request 8 CPUs
+              memory: "100Gi"    # Request 100Gi memory
           env:
             - name: TF_FORCE_GPU_ALLOW_GROWTH
               value: "true"
             - name: TF_GPU_THREAD_MODE
               value: "gpu_private"
+          volumeMounts:
+            - name: persistent-storage
+              mountPath: /persistent_storage
+      volumes:
+        - name: persistent-storage
+          persistentVolumeClaim:
+            claimName: fiola-pvc
       nodeSelector:
-        topology.kubernetes.io/zone: "wwh"
+        topology.kubernetes.io/zone: "12wvpl"
       tolerations:
         - key: nvidia.com/gpu
           operator: Exists

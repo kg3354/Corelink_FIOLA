@@ -270,7 +270,7 @@ import numpy as np
 import io
 import corelink
 from corelink.resources.control import subscribe_to_stream
-
+from generate_init_result import caiman_process
 HEADER_SIZE = 20  # Updated to include timestamp (8 bytes) + frame number (4 bytes) + chunk index (4 bytes) + total chunks (4 bytes)
 INACTIVITY_TIMEOUT = 10  # seconds
 
@@ -298,15 +298,16 @@ current_session_frames = []
 current_session_start_time = None
 last_update_time = time()
 
-# Ensure the 'results' directory exists
-os.makedirs('results', exist_ok=True)
+# Ensure the 'data' directory exists
+os.makedirs('data', exist_ok=True)
 
 async def save_session_tiff(frames, session_start_time):
-    tiff_filename = f'./results/session_{strftime("%Y%m%d_%H%M%S", localtime(session_start_time))}.tif'
+    tiff_filename = f'./data/session_{strftime("%Y%m%d_%H%M%S", localtime(session_start_time))}.tif'
     with tifffile.TiffWriter(tiff_filename, bigtiff=True) as tif_writer:
         for frame in frames:
             tif_writer.write(np.array(tifffile.imread(io.BytesIO(frame))), contiguous=True)
     print(f"Session saved as {tiff_filename}")
+    return tiff_filename
 
 async def check_inactivity():
     global current_session_frames, current_session_start_time, last_update_time
@@ -315,9 +316,11 @@ async def check_inactivity():
         current_time = time()
         if current_session_start_time and (current_time - last_update_time > INACTIVITY_TIMEOUT):
             print(f"Session inactive for {INACTIVITY_TIMEOUT} seconds. Marking session as complete.")
-            await save_session_tiff(current_session_frames, current_session_start_time)
+            tiff_filename = await save_session_tiff(current_session_frames, current_session_start_time)
+            await asyncio.get_event_loop().run_in_executor(None, caiman_process, tiff_filename)
             current_session_frames = []
             current_session_start_time = None
+            
 
 async def callback(data_bytes, streamID, header):
     global incoming_frames, current_session_frames, current_session_start_time, last_update_time
@@ -375,7 +378,7 @@ async def main():
     
     await corelink.connect("Testuser", "Testpassword", "corelink.hpc.nyu.edu", 20012)
     
-    receiver_id = await corelink.create_receiver("FentonInit2", "ws", alert=True, echo=True)
+    receiver_id = await corelink.create_receiver("FentonRec", "ws", alert=True, echo=True)
     
     print(f'Receiver ID: {receiver_id}')
     print("Start receiving")

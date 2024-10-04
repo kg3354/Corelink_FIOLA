@@ -1,7 +1,7 @@
-import corelink
 import asyncio
-import aiofiles
+import sys
 import os
+import math
 import struct
 import time
 from io import BytesIO
@@ -9,47 +9,32 @@ import cv2
 import tifffile
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-import math
+import aiofiles
 
-# Constants for chunk size, header size, and retry configuration
-CHUNK_SIZE = 32 * 1024  # 32 KB chunk size
+# sys.path.append("C:/Users/29712/corelink-client/python/package/Corelink/src")
+import corelink
+
+CHUNK_SIZE = 8 * 1024  # 8 KB chunk size
 HEADER_SIZE = 14  # Updated to include timestamp (8 bytes) + frame number (2 bytes) + chunk index (2 bytes) + total chunks (2 bytes)
 VALIDATION_TIMEOUT = 15  # seconds
 RETRY_COUNT = 5  # Number of retries
 RETRY_DELAY = 0.01  # Delay in seconds between retries
-
-# Global variables for connection validation and frame counting
 validConnection = False
 frame_counter = 0  # Frame counter for sequential frame numbers
 
-# Callback function for received data
 async def callback(data_bytes, streamID, header):
-    if streamID == sender_id:
-        return
-    print(f"Received data with length {len(data_bytes)} : {data_bytes}")
+    print(f"Received data with length {len(data_bytes)} : {data_bytes.decode(encoding='UTF-8')}")
 
-# Subscriber callback function
 async def subscriber(response, key):
     global validConnection
     print("subscriber: ", response)
     validConnection = True
 
-# Dropped connection callback function
 async def dropped(response, key):
     global validConnection
     print("dropped", response)
     validConnection = False
 
-# Update callback function
-async def update(response, key):
-    print(f'Updating as new sender valid in the workspace: {response}')
-    await corelink.subscribe_to_stream(response['receiverID'], response['streamID'])
-
-# Stale connection callback function
-async def stale(response, key):
-    print(response)
-
-# Function to check connection validity periodically
 async def check_connection():
     global validConnection
     while True:
@@ -57,38 +42,43 @@ async def check_connection():
         if not validConnection:
             print("Connection not validated, retrying...")
 
-# Function to send a chunk of a file
-async def send_file_chunk(chunk, frame_counter, chunk_index, total_chunks, timestamp):
-    buffer = bytearray(HEADER_SIZE + len(chunk))
-    struct.pack_into('>QHHH', buffer, 0, timestamp, frame_counter, chunk_index, total_chunks)
-    buffer[HEADER_SIZE:] = chunk
-
+async def send_file(file_data, frame_counter):
     retries = 0
     while retries < RETRY_COUNT:
         try:
-            await corelink.send(sender_id, buffer)
-            return
+            file_size = len(file_data)
+            total_chunks = math.ceil(file_size / CHUNK_SIZE)
+
+            # Get the current timestamp
+            timestamp = int(time.time() * 1000)  # Convert to milliseconds
+
+            for chunk_index in range(total_chunks):
+                chunk = file_data[chunk_index * CHUNK_SIZE:(chunk_index + 1) * CHUNK_SIZE]
+                buffer = bytearray(HEADER_SIZE + len(chunk))
+                struct.pack_into('>QHHH', buffer, 0, timestamp, frame_counter, chunk_index, total_chunks)
+                buffer[HEADER_SIZE:] = chunk
+
+                try:
+                    await corelink.send(sender_id, buffer)
+                except Exception as e:
+                    print(f"Failed to send chunk {chunk_index}/{total_chunks} for frame {frame_counter}: {e}")
+                    raise
+
+                print(f'Frame {frame_counter}, Chunk {chunk_index}/{total_chunks}, Size {len(buffer)}')
+
+            print(f"File sent successfully.")
+            return  # Exit the function on success
+
         except PermissionError as e:
             retries += 1
-            print(f"Failed to send chunk {chunk_index}/{total_chunks} for frame {frame_counter}: {e}. Retrying {retries}/{RETRY_COUNT}...")
+            print(f"Failed to send file: {e}. Retrying {retries}/{RETRY_COUNT}...")
             await asyncio.sleep(RETRY_DELAY)
         except Exception as e:
-            print(f"Failed to send chunk {chunk_index}/{total_chunks} for frame {frame_counter} due to a WebSocket error: {e}")
+            print(f"Failed to send file due to a WebSocket error: {e}")
             break
 
-# Function to send an entire file by splitting it into chunks
-async def send_file(file_data, frame_counter):
-    file_size = len(file_data)
-    total_chunks = math.ceil(file_size / CHUNK_SIZE)
-    timestamp = int(time.time() * 1000)  # Convert to milliseconds
+    print(f"Failed to send file after {RETRY_COUNT} retries due to permission issues or WebSocket errors.")
 
-    tasks = [
-        send_file_chunk(file_data[i * CHUNK_SIZE:(i + 1) * CHUNK_SIZE], frame_counter, i, total_chunks, timestamp)
-        for i in range(total_chunks)
-    ]
-    await asyncio.gather(*tasks)
-
-# Function to send an end message after file transfer is complete
 async def send_end_message():
     end_message = b'FINISHED'
     try:
@@ -97,7 +87,6 @@ async def send_end_message():
     except Exception as e:
         print(f"Failed to send end message: {e}")
 
-# Function to convert an AVI file to TIFF format in memory
 async def convert_avi_to_tiff_in_memory(avi_file):
     """Convert AVI file to TIFF file in memory asynchronously."""
     cap = cv2.VideoCapture(avi_file)
@@ -117,7 +106,6 @@ async def convert_avi_to_tiff_in_memory(avi_file):
     tiff_buffer.seek(0)
     return tiff_buffer.read()
 
-# File handler class to process new files detected by watchdog
 class FileHandler(FileSystemEventHandler):
     def __init__(self, loop):
         self.loop = loop
@@ -129,6 +117,7 @@ class FileHandler(FileSystemEventHandler):
             async with aiofiles.open(file_path, 'rb') as f:
                 file_data = await f.read()
             await send_file(file_data, frame_counter)
+           
         elif file_path.lower().endswith('.avi'):
             print(f'New AVI file detected: {file_path}')
             file_data = await convert_avi_to_tiff_in_memory(file_path)
@@ -139,30 +128,20 @@ class FileHandler(FileSystemEventHandler):
     def on_created(self, event):
         if event.is_directory:
             return
-        asyncio.run_coroutine_threadsafe(self.process_file(event.src_path), self.loop)
+        self.loop.create_task(self.process_file(event.src_path))
 
-# Main function to set up corelink connections and watchdog observer
 async def main():
     global validConnection, sender_id
     await corelink.set_server_callback(subscriber, 'subscriber')
     await corelink.set_server_callback(dropped, 'dropped')
-    await corelink.set_data_callback(callback)
-    await corelink.set_server_callback(update, 'update')
-    await corelink.set_server_callback(stale, 'stale')
 
     await corelink.connect("Testuser", "Testpassword", "corelink.hpc.nyu.edu", 20012)
-    sender_id = await corelink.create_sender("FentonRaw", "ws", "description1")
-
-    receiver_id = await corelink.create_receiver("FentonCtl", "ws", alert=True, echo=True)
-
-    print(f'Receiver ID: {receiver_id}')
-    print("Start receiving")
+    sender_id = await corelink.create_sender("FentonCtl", "ws", "description1")
 
     asyncio.create_task(check_connection())  # Start connection validation in the background
 
     watch_dir = os.getenv('WATCH_DIR', './curr')
     
-    # Utilize asyncio to send captured data in real time
     loop = asyncio.get_event_loop()
     event_handler = FileHandler(loop)
     observer = Observer()
@@ -177,5 +156,4 @@ async def main():
         observer.stop()
     observer.join()
 
-# Run the main function
 corelink.run(main())

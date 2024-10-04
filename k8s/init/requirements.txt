@@ -6,4 +6,5 @@ opencv-python-headless
 tifffile
 Websockets
 corelink-client
+tensorflow-gpu==2.4.0
 --extra-index-url https://pypi.ngc.nvidia.com

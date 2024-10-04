@@ -11,7 +11,6 @@ import numpy as np
 import warnings
 import psutil
 from fiola.fiola import FIOLA
-from fiola.signal_analysis_online import SignalAnalysisOnlineZ
 import io
 from numba import njit, prange
 import corelink
@@ -20,15 +19,7 @@ import receive_then_init
 import queue
 warnings.filterwarnings("ignore", message="no queue or thread to delete")
 
-num_frames_init = 2000  # Initialization frame count
-batch = 1  # Number of frames processed at a time
-time_per_step = []
-online_trace = None
-online_trace_deconvolved = None
-start = None
-
 HEADER_SIZE = 14  # Updated to include timestamp (8 bytes) + frame number (2 bytes) + chunk index (2 bytes) + total chunks (2 bytes)
-template = []
 
 # Configure logging
 logging.basicConfig(
@@ -52,62 +43,9 @@ incoming_frames = defaultdict(lambda: {
 os.makedirs('results', exist_ok=True)
 
 LATEST_FIOLA_STATE_PATH = '/persistent_storage/latest_fiola_state.pkl'
-fio_objects = []
-
-
-def print_nested_object(obj, indent=0, max_depth=3, max_array_print=5):
-    """Recursively print attributes and their values for a given object."""
-    spacing = " " * indent
-
-    if indent // 4 >= max_depth:
-        print(f"{spacing}Max depth reached, skipping deeper attributes...")
-        return
-
-    for attr in dir(obj):
-        if not attr.startswith('__'):
-            try:
-                value = getattr(obj, attr)
-                
-                # Handle numpy arrays for clearer printing
-                if isinstance(value, np.ndarray):
-                    print(f"{spacing}{attr} (numpy array) = shape: {value.shape}, dtype: {value.dtype}")
-                    logging.info(f"{attr} (numpy array) = shape: {value.shape}, dtype: {value.dtype}")
-                    # Optionally, print part of the array
-                    print(f"{spacing}Partial view:\n{value[:max_array_print]}")  # Adjust or remove [:max_array_print] as necessary for large arrays
-
-                # Handle dictionaries
-                elif isinstance(value, dict):
-                    print(f"{spacing}{attr} (dict) =")
-                    logging.info(f"{attr} (dict) = {value}")
-                    for k, v in value.items():
-                        print(f"{spacing}  {k}: {v}")
-                        logging.info(f"{spacing}  {k}: {v}")
-
-                # Handle methods or callable objects
-                elif callable(value):
-                    print(f"{spacing}{attr} (method) = {value}")
-                    logging.info(f"{attr} (method) = {value}")
-
-                # Handle nested objects (recursion)
-                elif isinstance(value, (object, list, tuple)) and not isinstance(value, (str, int, float)):
-                    print(f"{spacing}{attr} (object) = {type(value).__name__}")
-                    logging.info(f"{attr} (object) = {type(value).__name__}")
-                    print_nested_object(value, indent + 4, max_depth, max_array_print)
-
-                else:
-                    print(f"{spacing}{attr} = {value}")
-                    logging.info(f"{attr} = {value}")
-
-            except Exception as e:
-                print(f"{spacing}Could not retrieve {attr}: {e}")
-                logging.error(f"Could not retrieve {attr}: {e}")
-
-
-
+fio_objects=[]
 # Loading FIOLA state from a pickle file 
 def load_fiola_state(filepath):
-    global template, num_frames_init
-
     with open(filepath, 'rb') as f:
         fio_state = pickle.load(f)
     params = fio_state['params']
@@ -116,12 +54,10 @@ def load_fiola_state(filepath):
     Ab = np.array(fio_state['Ab'], dtype=np.float32)
     min_mov = fio_state['min_mov']
     mc_nn_mov = np.array(fio_state['mov_data'], dtype=np.float32)
-    num_frames_init = fio_state['frames_to_process']
+    
     fio = FIOLA(params=params)
     fio.create_pipeline(mc_nn_mov, trace_fiola, template, Ab, min_mov=min_mov)
-    
-    if not hasattr(fio.pipeline, 'saoz'):
-        fio.pipeline.saoz = SignalAnalysisOnlineZ()
+    fio.pipeline.saoz.update_q = queue.Queue()
     
     return fio
 
@@ -182,72 +118,25 @@ def process_frame_data(memmap_image):
     return frame_batch
 
 async def process_frame_with_buffer(fio, frame_data, frame_idx, timestamp, processtimestamp):
-    global online_trace, online_trace_deconvolved, time_per_step, start
-
-    # Adjust frame_idx to account for the initialization frames
-    adjusted_frame_idx = frame_idx + num_frames_init
-
     try:
         start_time = time()
         memmap_image = await memmap_from_buffer(frame_data)
         buffer_time = time()
         frame_batch = process_frame_data(memmap_image)
         proc_time = time()
-
-        # Initialize online_trace and online_trace_deconvolved if they are None
-        if online_trace is None:
-            total_neurons = fio.Ab.shape[-1]
-            total_background = fio.params.hals['nb']
-            online_trace = np.zeros((total_neurons, adjusted_frame_idx + 1), dtype=np.float32)
-            online_trace_deconvolved = np.zeros((total_neurons - total_background, adjusted_frame_idx + 1), dtype=np.float32)
-            time_per_step = np.zeros((adjusted_frame_idx + 1) // batch)
-            start = time()
-
-        # Resize online_trace and online_trace_deconvolved to accommodate new frames beyond initialization
-        if adjusted_frame_idx >= online_trace.shape[1]:
-            new_size = adjusted_frame_idx + batch
-            online_trace = np.pad(online_trace, ((0, 0), (0, new_size - online_trace.shape[1])), mode='constant', constant_values=0)
-            online_trace_deconvolved = np.pad(online_trace_deconvolved, ((0, 0), (0, new_size - online_trace_deconvolved.shape[1])), mode='constant', constant_values=0)
-            new_time_per_step_size = (new_size) // batch
-            time_per_step = np.pad(time_per_step, (0, new_time_per_step_size - time_per_step.shape[0]), mode='constant', constant_values=0)
-
-        # Calculate the current index for online_trace
-        current_idx = adjusted_frame_idx - num_frames_init
-
-        # Ensure current_idx is non-negative
-        if current_idx < 0:
-            logging.error(f"Negative current_idx: {current_idx}")
-            return
-
-        # Update online_trace and online_trace_deconvolved
-        online_trace[:, current_idx:current_idx + batch] = fio.pipeline.saoz.trace[:, :batch]
-        online_trace_deconvolved[:, current_idx:current_idx + batch] = fio.pipeline.saoz.trace_deconvolved[:, :batch]
-
-        # Record the time per step
-        time_per_step[current_idx // batch] = (time() - start)
-        fio.pipeline.saoz.online_trace = online_trace
-        fio.pipeline.saoz.online_trace_deconvolved = online_trace_deconvolved
-        # Compute estimates after processing the frame
+        fio.fit_online_frame(frame_batch)
         fio.compute_estimates()
-        
-        if current_idx == 100:
-            print('Data at idx 100:')
-            print_nested_object(fio, max_depth=3, max_array_print=5)
-        # Log the processing times
         end_time = time()
         total_time = end_time - timestamp / 1000  # Convert timestamp back to seconds
-        logging.info(f"Total time spent on frame {frame_idx} (from capture to finish): {total_time}, total time processing is {end_time - proc_time}, buffering time: {buffer_time - start_time}, start to finish: {end_time - start_time}")
-        message = f'Processed frame {frame_idx} with trace sum {np.sum(online_trace)} using {total_time}'
+        message = f"Total time spent on frame {frame_idx} (from capture to finish): {total_time}, total time processing is {end_time-proc_time}, buffering time: {buffer_time - start_time}, start to finish: {end_time - start_time}"
+        print(message)
         await corelink.send(sender_id, message)
-      
-
     except Exception as e:
         logging.error(f"Failed to process frame with buffer: {e}")
 
 async def callback(data_bytes, streamID, header):
     global incoming_frames
-    if streamID == sender_id:
-        return
+
     # Extract the header information
     timestamp, frame_number, chunk_index, total_chunks = struct.unpack('>QHHH', data_bytes[:HEADER_SIZE])
     chunk_data = data_bytes[HEADER_SIZE:]
@@ -364,4 +253,3 @@ p = psutil.Process(os.getpid())
 numa_nodes = psutil.cpu_count(logical=False)
 numa_cpus = list(range(numa_nodes))
 p.cpu_affinity(numa_cpus)
-

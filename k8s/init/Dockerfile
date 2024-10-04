@@ -1,43 +1,89 @@
-# # # # # # # # # # # # # # # Use an official Python runtime as a parent image
-# # # # # # # # # # # # # # FROM python:3.8
+# # # # # # # # # # # # # # # # Use an official Python runtime as a parent image
+# # # # # # # # # # # # # # # FROM python:3.8
+
+# # # # # # # # # # # # # # # # Set the working directory in the container
+# # # # # # # # # # # # # # # WORKDIR /usr/src/app
+
+# # # # # # # # # # # # # # # # Install kubectl and other dependencies
+# # # # # # # # # # # # # # # RUN apt-get update && apt-get install -y curl && \
+# # # # # # # # # # # # # # #     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+# # # # # # # # # # # # # # #     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
+# # # # # # # # # # # # # # #     apt-get install -y git && \
+# # # # # # # # # # # # # # #     apt-get install -y libsm6 libxext6 libgl1-mesa-glx && \
+# # # # # # # # # # # # # # #     pip install --upgrade pip && \
+# # # # # # # # # # # # # # #     pip install --upgrade setuptools six && \
+# # # # # # # # # # # # # # #     apt-get clean && \
+# # # # # # # # # # # # # # #     rm -rf /var/lib/apt/lists/*
+
+# # # # # # # # # # # # # # # # Copy the requirements and pickle files
+# # # # # # # # # # # # # # # COPY requirements.txt .
+# # # # # # # # # # # # # # # COPY generate_init_result.py .
+# # # # # # # # # # # # # # # COPY test_sub.tif . 
+
+# # # # # # # # # # # # # # # # Download FIOLA and CaImAn
+# # # # # # # # # # # # # # # RUN git clone https://github.com/nel-lab/FIOLA.git && \
+# # # # # # # # # # # # # # #     pip install -r FIOLA/requirements.txt && \
+# # # # # # # # # # # # # # #     pip install -e FIOLA
+
+# # # # # # # # # # # # # # # RUN git clone https://github.com/flatironinstitute/CaImAn.git -b v1.9.13 && \
+# # # # # # # # # # # # # # #     pip install -e CaImAn
+
+# # # # # # # # # # # # # # # # Install packages from requirements.txt
+# # # # # # # # # # # # # # # RUN pip install --no-cache-dir -r requirements.txt
+
+# # # # # # # # # # # # # # # # Install telnet
+# # # # # # # # # # # # # # # RUN apt-get update && apt-get install -y telnet
+ 
+# # # # # # # # # # # # # # # # The command to run the script, you'll overwrite this in Kubernetes deployment
+# # # # # # # # # # # # # # # CMD ["python", "./generate_init_result.py"]
+# # # # # # # # # # # # # # # Use an official CUDA runtime with Ubuntu 20.04 and Python 3.8
+# # # # # # # # # # # # # # FROM nvidia/cuda:11.2.0-cudnn8-runtime-ubuntu20.04
 
 # # # # # # # # # # # # # # # Set the working directory in the container
 # # # # # # # # # # # # # # WORKDIR /usr/src/app
 
-# # # # # # # # # # # # # # # Install kubectl and other dependencies
-# # # # # # # # # # # # # # RUN apt-get update && apt-get install -y curl && \
-# # # # # # # # # # # # # #     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
-# # # # # # # # # # # # # #     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
-# # # # # # # # # # # # # #     apt-get install -y git && \
-# # # # # # # # # # # # # #     apt-get install -y libsm6 libxext6 libgl1-mesa-glx && \
-# # # # # # # # # # # # # #     pip install --upgrade pip && \
-# # # # # # # # # # # # # #     pip install --upgrade setuptools six && \
-# # # # # # # # # # # # # #     apt-get clean && \
-# # # # # # # # # # # # # #     rm -rf /var/lib/apt/lists/*
+# # # # # # # # # # # # # # # Install Python 3.8 and other dependencies
+# # # # # # # # # # # # # # RUN apt-get update && apt-get install -y \
+# # # # # # # # # # # # # #     python3.8 \
+# # # # # # # # # # # # # #     python3.8-venv \
+# # # # # # # # # # # # # #     python3.8-dev \
+# # # # # # # # # # # # # #     curl \
+# # # # # # # # # # # # # #     git \
+# # # # # # # # # # # # # #     libsm6 \
+# # # # # # # # # # # # # #     libxext6 \
+# # # # # # # # # # # # # #     libgl1-mesa-glx \
+# # # # # # # # # # # # # #     && apt-get clean \
+# # # # # # # # # # # # # #     && rm -rf /var/lib/apt/lists/*
+
+# # # # # # # # # # # # # # # Install pip for Python 3.8
+# # # # # # # # # # # # # # RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.8 get-pip.py && rm get-pip.py
+
+# # # # # # # # # # # # # # # Install kubectl
+# # # # # # # # # # # # # # RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+# # # # # # # # # # # # # #     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
 # # # # # # # # # # # # # # # Copy the requirements and pickle files
 # # # # # # # # # # # # # # COPY requirements.txt .
 # # # # # # # # # # # # # # COPY generate_init_result.py .
 # # # # # # # # # # # # # # COPY test_sub.tif . 
 
-# # # # # # # # # # # # # # # Download FIOLA and CaImAn
+# # # # # # # # # # # # # # # Install Python packages
+# # # # # # # # # # # # # # RUN python3.8 -m pip install --upgrade pip setuptools six && \
+# # # # # # # # # # # # # #     python3.8 -m pip install --no-cache-dir -r requirements.txt
+
+# # # # # # # # # # # # # # # Download and install FIOLA and CaImAn
 # # # # # # # # # # # # # # RUN git clone https://github.com/nel-lab/FIOLA.git && \
-# # # # # # # # # # # # # #     pip install -r FIOLA/requirements.txt && \
-# # # # # # # # # # # # # #     pip install -e FIOLA
+# # # # # # # # # # # # # #     python3.8 -m pip install -r FIOLA/requirements.txt && \
+# # # # # # # # # # # # # #     python3.8 -m pip install -e FIOLA
 
 # # # # # # # # # # # # # # RUN git clone https://github.com/flatironinstitute/CaImAn.git -b v1.9.13 && \
-# # # # # # # # # # # # # #     pip install -e CaImAn
+# # # # # # # # # # # # # #     python3.8 -m pip install -e CaImAn
 
-# # # # # # # # # # # # # # # Install packages from requirements.txt
-# # # # # # # # # # # # # # RUN pip install --no-cache-dir -r requirements.txt
 
-# # # # # # # # # # # # # # # Install telnet
-# # # # # # # # # # # # # # RUN apt-get update && apt-get install -y telnet
- 
 # # # # # # # # # # # # # # # The command to run the script, you'll overwrite this in Kubernetes deployment
-# # # # # # # # # # # # # # CMD ["python", "./generate_init_result.py"]
-# # # # # # # # # # # # # # Use an official CUDA runtime with Ubuntu 20.04 and Python 3.8
-# # # # # # # # # # # # # FROM nvidia/cuda:11.2.0-cudnn8-runtime-ubuntu20.04
+# # # # # # # # # # # # # # CMD ["python3.8", "./generate_init_result.py"]
+# # # # # # # # # # # # # # Use an official CUDA runtime with Python 3.8
+# # # # # # # # # # # # # FROM nvidia/cuda:12.0.0-runtime-ubuntu20.04
 
 # # # # # # # # # # # # # # Set the working directory in the container
 # # # # # # # # # # # # # WORKDIR /usr/src/app
@@ -47,6 +93,7 @@
 # # # # # # # # # # # # #     python3.8 \
 # # # # # # # # # # # # #     python3.8-venv \
 # # # # # # # # # # # # #     python3.8-dev \
+# # # # # # # # # # # # #     build-essential \
 # # # # # # # # # # # # #     curl \
 # # # # # # # # # # # # #     git \
 # # # # # # # # # # # # #     libsm6 \
@@ -62,45 +109,116 @@
 # # # # # # # # # # # # # RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
 # # # # # # # # # # # # #     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
-# # # # # # # # # # # # # # Copy the requirements and pickle files
+# # # # # # # # # # # # # # Copy the requirements and scripts files
 # # # # # # # # # # # # # COPY requirements.txt .
 # # # # # # # # # # # # # COPY generate_init_result.py .
-# # # # # # # # # # # # # COPY test_sub.tif . 
+# # # # # # # # # # # # # COPY test_sub.tif .
 
-# # # # # # # # # # # # # # Install Python packages
+# # # # # # # # # # # # # # Install Python packages from requirements.txt
 # # # # # # # # # # # # # RUN python3.8 -m pip install --upgrade pip setuptools six && \
 # # # # # # # # # # # # #     python3.8 -m pip install --no-cache-dir -r requirements.txt
 
-# # # # # # # # # # # # # # Download and install FIOLA and CaImAn
+# # # # # # # # # # # # # # Download and install FIOLA
 # # # # # # # # # # # # # RUN git clone https://github.com/nel-lab/FIOLA.git && \
 # # # # # # # # # # # # #     python3.8 -m pip install -r FIOLA/requirements.txt && \
 # # # # # # # # # # # # #     python3.8 -m pip install -e FIOLA
 
+# # # # # # # # # # # # # # Download and install CaImAn
 # # # # # # # # # # # # # RUN git clone https://github.com/flatironinstitute/CaImAn.git -b v1.9.13 && \
+# # # # # # # # # # # # #     python3.8 -m pip install -r CaImAn/requirements.txt && \
 # # # # # # # # # # # # #     python3.8 -m pip install -e CaImAn
 
+# # # # # # # # # # # # # # Install telnet
+# # # # # # # # # # # # # RUN apt-get update && apt-get install -y telnet
 
 # # # # # # # # # # # # # # The command to run the script, you'll overwrite this in Kubernetes deployment
 # # # # # # # # # # # # # CMD ["python3.8", "./generate_init_result.py"]
 # # # # # # # # # # # # # Use an official CUDA runtime with Python 3.8
-# # # # # # # # # # # # FROM nvidia/cuda:12.0.0-runtime-ubuntu20.04
+# # # # # # # # # # # FROM nvidia/cuda:12.0.0-runtime-ubuntu20.04
+
+# # # # # # # # # # # # Set the working directory in the container
+# # # # # # # # # # # WORKDIR /usr/src/app
+
+# # # # # # # # # # # # Set environment variables to configure tzdata non-interactively
+# # # # # # # # # # # ENV DEBIAN_FRONTEND=noninteractive
+# # # # # # # # # # # ENV TZ=Etc/UTC
+
+# # # # # # # # # # # # Install Python 3.8 and other dependencies
+# # # # # # # # # # # RUN apt-get update && apt-get install -y \
+# # # # # # # # # # #     python3.8 \
+# # # # # # # # # # #     python3.8-venv \
+# # # # # # # # # # #     python3.8-dev \
+# # # # # # # # # # #     build-essential \
+# # # # # # # # # # #     curl \
+# # # # # # # # # # #     git \
+# # # # # # # # # # #     libsm6 \
+# # # # # # # # # # #     libxext6 \
+# # # # # # # # # # #     libgl1-mesa-glx \
+# # # # # # # # # # #     libglib2.0-0 \
+# # # # # # # # # # #     && apt-get clean \
+# # # # # # # # # # #     && rm -rf /var/lib/apt/lists/*
+
+# # # # # # # # # # # # Install pip for Python 3.8
+# # # # # # # # # # # RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.8 get-pip.py && rm get-pip.py
+
+# # # # # # # # # # # # Copy the requirements and scripts files
+# # # # # # # # # # # COPY requirements.txt .
+# # # # # # # # # # # COPY generate_init_result.py .
+# # # # # # # # # # # COPY test_sub.tif .
+
+# # # # # # # # # # # # Install Python packages from requirements.txt
+# # # # # # # # # # # RUN pip install --upgrade pip setuptools six && \
+# # # # # # # # # # #     pip install --no-cache-dir -r requirements.txt
+
+# # # # # # # # # # # # Download and install FIOLA
+# # # # # # # # # # # RUN git clone https://github.com/nel-lab/FIOLA.git && \
+# # # # # # # # # # #     cd FIOLA && \
+# # # # # # # # # # #     pip install -r requirements.txt && \
+# # # # # # # # # # #     pip install -e . && \
+# # # # # # # # # # #     cd ..
+
+# # # # # # # # # # # # Download and install CaImAn
+# # # # # # # # # # # RUN git clone https://github.com/flatironinstitute/CaImAn.git -b v1.9.13 && \
+# # # # # # # # # # #     cd CaImAn && \
+# # # # # # # # # # #     pip install -r requirements.txt && \
+# # # # # # # # # # #     pip install -e . && \
+# # # # # # # # # # #     cd ..
+
+# # # # # # # # # # # # Set PYTHONPATH to include FIOLA and CaImAn
+# # # # # # # # # # # ENV PYTHONPATH="/usr/src/app/FIOLA:/usr/src/app/CaImAn:/usr/local/lib/python3.8/dist-packages:${PYTHONPATH}"
+
+
+
+# # # # # # # # # # # # The command to run the script, you'll overwrite this in Kubernetes deployment
+# # # # # # # # # # # CMD ["python", "./generate_init_result.py"]
+
+
+
+# # # # # # # # # # # # Use an official Python runtime as a parent image
+# # # # # # # # # # # # FROM python:3.8
 
 # # # # # # # # # # # # # Set the working directory in the container
 # # # # # # # # # # # # WORKDIR /usr/src/app
 
-# # # # # # # # # # # # # Install Python 3.8 and other dependencies
-# # # # # # # # # # # # RUN apt-get update && apt-get install -y \
-# # # # # # # # # # # #     python3.8 \
-# # # # # # # # # # # #     python3.8-venv \
-# # # # # # # # # # # #     python3.8-dev \
-# # # # # # # # # # # #     build-essential \
+# # # # # # # # # # # # # Install CUDA and other dependencies
+# # # # # # # # # # # # RUN apt-get update && \
+# # # # # # # # # # # #     apt-get install -y --no-install-recommends \
+# # # # # # # # # # # #     cuda-command-line-tools-11-2 \
+# # # # # # # # # # # #     libcudnn8=8.1.1.33-1+cuda11.2 \
+# # # # # # # # # # # #     libcudnn8-dev=8.1.1.33-1+cuda11.2 \
+# # # # # # # # # # # #     libnccl2=2.8.4-1+cuda11.2 \
+# # # # # # # # # # # #     libnccl-dev=2.8.4-1+cuda11.2 \
 # # # # # # # # # # # #     curl \
 # # # # # # # # # # # #     git \
 # # # # # # # # # # # #     libsm6 \
 # # # # # # # # # # # #     libxext6 \
-# # # # # # # # # # # #     libgl1-mesa-glx \
-# # # # # # # # # # # #     && apt-get clean \
-# # # # # # # # # # # #     && rm -rf /var/lib/apt/lists/*
+# # # # # # # # # # # #     libgl1-mesa-glx && \
+# # # # # # # # # # # #     apt-get clean && \
+# # # # # # # # # # # #     rm -rf /var/lib/apt/lists/*
+
+# # # # # # # # # # # # # Set environment variables for CUDA
+# # # # # # # # # # # # ENV LD_LIBRARY_PATH /usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
+# # # # # # # # # # # # ENV PATH /usr/local/cuda/bin:$PATH
 
 # # # # # # # # # # # # # Install pip for Python 3.8
 # # # # # # # # # # # # RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.8 get-pip.py && rm get-pip.py
@@ -114,27 +232,27 @@
 # # # # # # # # # # # # COPY generate_init_result.py .
 # # # # # # # # # # # # COPY test_sub.tif .
 
-# # # # # # # # # # # # # Install Python packages from requirements.txt
-# # # # # # # # # # # # RUN python3.8 -m pip install --upgrade pip setuptools six && \
-# # # # # # # # # # # #     python3.8 -m pip install --no-cache-dir -r requirements.txt
+# # # # # # # # # # # # # Install Python packages
+# # # # # # # # # # # # RUN pip install --upgrade pip setuptools six && \
+# # # # # # # # # # # #     pip install --no-cache-dir -r requirements.txt
 
 # # # # # # # # # # # # # Download and install FIOLA
 # # # # # # # # # # # # RUN git clone https://github.com/nel-lab/FIOLA.git && \
-# # # # # # # # # # # #     python3.8 -m pip install -r FIOLA/requirements.txt && \
-# # # # # # # # # # # #     python3.8 -m pip install -e FIOLA
+# # # # # # # # # # # #     pip install -r FIOLA/requirements.txt && \
+# # # # # # # # # # # #     pip install -e FIOLA
 
 # # # # # # # # # # # # # Download and install CaImAn
 # # # # # # # # # # # # RUN git clone https://github.com/flatironinstitute/CaImAn.git -b v1.9.13 && \
-# # # # # # # # # # # #     python3.8 -m pip install -r CaImAn/requirements.txt && \
-# # # # # # # # # # # #     python3.8 -m pip install -e CaImAn
+# # # # # # # # # # # #     pip install -r CaImAn/requirements.txt && \
+# # # # # # # # # # # #     pip install -e CaImAn
 
-# # # # # # # # # # # # # Install telnet
-# # # # # # # # # # # # RUN apt-get update && apt-get install -y telnet
+# # # # # # # # # # # # # Print installed packages and Python path for debugging
+# # # # # # # # # # # # RUN pip list && \
+# # # # # # # # # # # #     python -c "import sys; print(sys.path)"
 
 # # # # # # # # # # # # # The command to run the script, you'll overwrite this in Kubernetes deployment
-# # # # # # # # # # # # CMD ["python3.8", "./generate_init_result.py"]
-# # # # # # # # # # # # Use an official CUDA runtime with Python 3.8
-# # # # # # # # # # FROM nvidia/cuda:12.0.0-runtime-ubuntu20.04
+# # # # # # # # # # # # CMD ["python3", "./generate_init_result.py"]
+# # # # # # # # # # FROM nvidia/cuda:11.0.3-runtime-ubuntu20.04
 
 # # # # # # # # # # # Set the working directory in the container
 # # # # # # # # # # WORKDIR /usr/src/app
@@ -160,6 +278,9 @@
 
 # # # # # # # # # # # Install pip for Python 3.8
 # # # # # # # # # # RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.8 get-pip.py && rm get-pip.py
+
+
+
 
 # # # # # # # # # # # Copy the requirements and scripts files
 # # # # # # # # # # COPY requirements.txt .
@@ -187,72 +308,9 @@
 # # # # # # # # # # # Set PYTHONPATH to include FIOLA and CaImAn
 # # # # # # # # # # ENV PYTHONPATH="/usr/src/app/FIOLA:/usr/src/app/CaImAn:/usr/local/lib/python3.8/dist-packages:${PYTHONPATH}"
 
-
-
 # # # # # # # # # # # The command to run the script, you'll overwrite this in Kubernetes deployment
 # # # # # # # # # # CMD ["python", "./generate_init_result.py"]
-
-
-
-# # # # # # # # # # # Use an official Python runtime as a parent image
-# # # # # # # # # # # FROM python:3.8
-
-# # # # # # # # # # # # Set the working directory in the container
-# # # # # # # # # # # WORKDIR /usr/src/app
-
-# # # # # # # # # # # # Install CUDA and other dependencies
-# # # # # # # # # # # RUN apt-get update && \
-# # # # # # # # # # #     apt-get install -y --no-install-recommends \
-# # # # # # # # # # #     cuda-command-line-tools-11-2 \
-# # # # # # # # # # #     libcudnn8=8.1.1.33-1+cuda11.2 \
-# # # # # # # # # # #     libcudnn8-dev=8.1.1.33-1+cuda11.2 \
-# # # # # # # # # # #     libnccl2=2.8.4-1+cuda11.2 \
-# # # # # # # # # # #     libnccl-dev=2.8.4-1+cuda11.2 \
-# # # # # # # # # # #     curl \
-# # # # # # # # # # #     git \
-# # # # # # # # # # #     libsm6 \
-# # # # # # # # # # #     libxext6 \
-# # # # # # # # # # #     libgl1-mesa-glx && \
-# # # # # # # # # # #     apt-get clean && \
-# # # # # # # # # # #     rm -rf /var/lib/apt/lists/*
-
-# # # # # # # # # # # # Set environment variables for CUDA
-# # # # # # # # # # # ENV LD_LIBRARY_PATH /usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
-# # # # # # # # # # # ENV PATH /usr/local/cuda/bin:$PATH
-
-# # # # # # # # # # # # Install pip for Python 3.8
-# # # # # # # # # # # RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.8 get-pip.py && rm get-pip.py
-
-# # # # # # # # # # # # Install kubectl
-# # # # # # # # # # # RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
-# # # # # # # # # # #     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-
-# # # # # # # # # # # # Copy the requirements and scripts files
-# # # # # # # # # # # COPY requirements.txt .
-# # # # # # # # # # # COPY generate_init_result.py .
-# # # # # # # # # # # COPY test_sub.tif .
-
-# # # # # # # # # # # # Install Python packages
-# # # # # # # # # # # RUN pip install --upgrade pip setuptools six && \
-# # # # # # # # # # #     pip install --no-cache-dir -r requirements.txt
-
-# # # # # # # # # # # # Download and install FIOLA
-# # # # # # # # # # # RUN git clone https://github.com/nel-lab/FIOLA.git && \
-# # # # # # # # # # #     pip install -r FIOLA/requirements.txt && \
-# # # # # # # # # # #     pip install -e FIOLA
-
-# # # # # # # # # # # # Download and install CaImAn
-# # # # # # # # # # # RUN git clone https://github.com/flatironinstitute/CaImAn.git -b v1.9.13 && \
-# # # # # # # # # # #     pip install -r CaImAn/requirements.txt && \
-# # # # # # # # # # #     pip install -e CaImAn
-
-# # # # # # # # # # # # Print installed packages and Python path for debugging
-# # # # # # # # # # # RUN pip list && \
-# # # # # # # # # # #     python -c "import sys; print(sys.path)"
-
-# # # # # # # # # # # # The command to run the script, you'll overwrite this in Kubernetes deployment
-# # # # # # # # # # # CMD ["python3", "./generate_init_result.py"]
-# # # # # # # # # FROM nvidia/cuda:11.0.3-runtime-ubuntu20.04
+# # # # # # # # # FROM nvidia/cuda:11.0.3-runtime-ubuntu18.04
 
 # # # # # # # # # # Set the working directory in the container
 # # # # # # # # # WORKDIR /usr/src/app
@@ -266,6 +324,7 @@
 # # # # # # # # #     python3.8 \
 # # # # # # # # #     python3.8-venv \
 # # # # # # # # #     python3.8-dev \
+# # # # # # # # #     python3.8-distutils \
 # # # # # # # # #     build-essential \
 # # # # # # # # #     curl \
 # # # # # # # # #     git \
@@ -279,7 +338,19 @@
 # # # # # # # # # # Install pip for Python 3.8
 # # # # # # # # # RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.8 get-pip.py && rm get-pip.py
 
+# # # # # # # # # # Add the NVIDIA package repositories
+# # # # # # # # # RUN apt-get update && apt-get install -y gnupg && \
+# # # # # # # # #     curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add - && \
+# # # # # # # # #     curl -sL https://nvidia.github.io/nvidia-docker/ubuntu20.04/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list && \
+# # # # # # # # #     apt-get update && \
+# # # # # # # # #     apt-get install -y nvidia-container-toolkit
 
+# # # # # # # # # # Install cuDNN
+# # # # # # # # # RUN apt-get update && apt-get install -y --no-install-recommends \
+# # # # # # # # #     libcudnn8 \
+# # # # # # # # #     libcudnn8-dev \
+# # # # # # # # #     && apt-get clean \
+# # # # # # # # #     && rm -rf /var/lib/apt/lists/*
 
 
 # # # # # # # # # # Copy the requirements and scripts files
@@ -308,8 +379,14 @@
 # # # # # # # # # # Set PYTHONPATH to include FIOLA and CaImAn
 # # # # # # # # # ENV PYTHONPATH="/usr/src/app/FIOLA:/usr/src/app/CaImAn:/usr/local/lib/python3.8/dist-packages:${PYTHONPATH}"
 
+# # # # # # # # # # Set LD_LIBRARY_PATH to include CUDA and cuDNN libraries
+# # # # # # # # # ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/targets/x86_64-linux/lib:/usr/lib/x86_64-linux-gnu
+
 # # # # # # # # # # The command to run the script, you'll overwrite this in Kubernetes deployment
 # # # # # # # # # CMD ["python", "./generate_init_result.py"]
+
+
+
 # # # # # # # # FROM nvidia/cuda:11.0.3-runtime-ubuntu18.04
 
 # # # # # # # # # Set the working directory in the container
@@ -324,7 +401,7 @@
 # # # # # # # #     python3.8 \
 # # # # # # # #     python3.8-venv \
 # # # # # # # #     python3.8-dev \
-# # # # # # # #     python3.8-distutils \
+# # # # # # # #     python3-distutils \
 # # # # # # # #     build-essential \
 # # # # # # # #     curl \
 # # # # # # # #     git \
@@ -341,17 +418,16 @@
 # # # # # # # # # Add the NVIDIA package repositories
 # # # # # # # # RUN apt-get update && apt-get install -y gnupg && \
 # # # # # # # #     curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add - && \
-# # # # # # # #     curl -sL https://nvidia.github.io/nvidia-docker/ubuntu20.04/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list && \
+# # # # # # # #     curl -sL https://nvidia.github.io/nvidia-docker/ubuntu18.04/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list && \
 # # # # # # # #     apt-get update && \
 # # # # # # # #     apt-get install -y nvidia-container-toolkit
 
 # # # # # # # # # Install cuDNN
 # # # # # # # # RUN apt-get update && apt-get install -y --no-install-recommends \
-# # # # # # # #     libcudnn8 \
-# # # # # # # #     libcudnn8-dev \
+# # # # # # # #     libcudnn8=8.0.5.39-1+cuda11.0 \
+# # # # # # # #     libcudnn8-dev=8.0.5.39-1+cuda11.0 \
 # # # # # # # #     && apt-get clean \
 # # # # # # # #     && rm -rf /var/lib/apt/lists/*
-
 
 # # # # # # # # # Copy the requirements and scripts files
 # # # # # # # # COPY requirements.txt .
@@ -361,6 +437,9 @@
 # # # # # # # # # Install Python packages from requirements.txt
 # # # # # # # # RUN pip install --upgrade pip setuptools six && \
 # # # # # # # #     pip install --no-cache-dir -r requirements.txt
+
+# # # # # # # # # Install specific version of TensorFlow compatible with CUDA 11.0
+# # # # # # # # RUN pip install tensorflow==2.4.1
 
 # # # # # # # # # Download and install FIOLA
 # # # # # # # # RUN git clone https://github.com/nel-lab/FIOLA.git && \
@@ -373,6 +452,7 @@
 # # # # # # # # RUN git clone https://github.com/flatironinstitute/CaImAn.git -b v1.9.13 && \
 # # # # # # # #     cd CaImAn && \
 # # # # # # # #     pip install -r requirements.txt && \
+# # # # # # # #     pip install -r requirements_gpu.txt && \
 # # # # # # # #     pip install -e . && \
 # # # # # # # #     cd ..
 
@@ -384,9 +464,6 @@
 
 # # # # # # # # # The command to run the script, you'll overwrite this in Kubernetes deployment
 # # # # # # # # CMD ["python", "./generate_init_result.py"]
-
-
-
 # # # # # # # FROM nvidia/cuda:11.0.3-runtime-ubuntu18.04
 
 # # # # # # # # Set the working directory in the container
@@ -409,32 +486,24 @@
 # # # # # # #     libxext6 \
 # # # # # # #     libgl1-mesa-glx \
 # # # # # # #     libglib2.0-0 \
+# # # # # # #     libcudnn8=8.0.5.39-1+cuda11.0 \
+# # # # # # #     libcudnn8-dev=8.0.5.39-1+cuda11.0 \
+# # # # # # #     libcupti-dev \
 # # # # # # #     && apt-get clean \
 # # # # # # #     && rm -rf /var/lib/apt/lists/*
 
 # # # # # # # # Install pip for Python 3.8
 # # # # # # # RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.8 get-pip.py && rm get-pip.py
 
-# # # # # # # # Add the NVIDIA package repositories
+# # # # # # # # Install nvidia-container-toolkit
 # # # # # # # RUN apt-get update && apt-get install -y gnupg && \
 # # # # # # #     curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add - && \
 # # # # # # #     curl -sL https://nvidia.github.io/nvidia-docker/ubuntu18.04/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list && \
 # # # # # # #     apt-get update && \
 # # # # # # #     apt-get install -y nvidia-container-toolkit
 
-# # # # # # # # Install cuDNN
-# # # # # # # RUN apt-get update && apt-get install -y --no-install-recommends \
-# # # # # # #     libcudnn8=8.0.5.39-1+cuda11.0 \
-# # # # # # #     libcudnn8-dev=8.0.5.39-1+cuda11.0 \
-# # # # # # #     && apt-get clean \
-# # # # # # #     && rm -rf /var/lib/apt/lists/*
-
-# # # # # # # # Copy the requirements and scripts files
+# # # # # # # # Install Python packages
 # # # # # # # COPY requirements.txt .
-# # # # # # # COPY generate_init_result.py .
-# # # # # # # COPY test_sub.tif .
-
-# # # # # # # # Install Python packages from requirements.txt
 # # # # # # # RUN pip install --upgrade pip setuptools six && \
 # # # # # # #     pip install --no-cache-dir -r requirements.txt
 
@@ -462,8 +531,12 @@
 # # # # # # # # Set LD_LIBRARY_PATH to include CUDA and cuDNN libraries
 # # # # # # # ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/targets/x86_64-linux/lib:/usr/lib/x86_64-linux-gnu
 
+# # # # # # # # Copy the script and data files
+# # # # # # # COPY generate_init_result.py .
+# # # # # # # COPY test_sub.tif .
+
 # # # # # # # # The command to run the script, you'll overwrite this in Kubernetes deployment
-# # # # # # # CMD ["python", "./generate_init_result.py"]
+# # # # # # # CMD ["python3", "./generate_init_result.py"]
 # # # # # # FROM nvidia/cuda:11.0.3-runtime-ubuntu18.04
 
 # # # # # # # Set the working directory in the container
@@ -568,6 +641,9 @@
 # # # # # # Install pip for Python 3.8
 # # # # # RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.8 get-pip.py && rm get-pip.py
 
+# # # # # # Ensure python3 points to python3.8
+# # # # # RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
+
 # # # # # # Install nvidia-container-toolkit
 # # # # # RUN apt-get update && apt-get install -y gnupg && \
 # # # # #     curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add - && \
@@ -610,6 +686,7 @@
 
 # # # # # # The command to run the script, you'll overwrite this in Kubernetes deployment
 # # # # # CMD ["python3", "./generate_init_result.py"]
+
 # # # # FROM nvidia/cuda:11.0.3-runtime-ubuntu18.04
 
 # # # # # Set the working directory in the container
@@ -632,27 +709,32 @@
 # # # #     libxext6 \
 # # # #     libgl1-mesa-glx \
 # # # #     libglib2.0-0 \
-# # # #     libcudnn8=8.0.5.39-1+cuda11.0 \
-# # # #     libcudnn8-dev=8.0.5.39-1+cuda11.0 \
-# # # #     libcupti-dev \
 # # # #     && apt-get clean \
 # # # #     && rm -rf /var/lib/apt/lists/*
 
 # # # # # Install pip for Python 3.8
 # # # # RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.8 get-pip.py && rm get-pip.py
 
-# # # # # Ensure python3 points to python3.8
-# # # # RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
-
-# # # # # Install nvidia-container-toolkit
+# # # # # Add the NVIDIA package repositories
 # # # # RUN apt-get update && apt-get install -y gnupg && \
 # # # #     curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add - && \
 # # # #     curl -sL https://nvidia.github.io/nvidia-docker/ubuntu18.04/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list && \
 # # # #     apt-get update && \
 # # # #     apt-get install -y nvidia-container-toolkit
 
-# # # # # Install Python packages
+# # # # # Install cuDNN
+# # # # RUN apt-get update && apt-get install -y --no-install-recommends \
+# # # #     libcudnn8=8.0.5.39-1+cuda11.0 \
+# # # #     libcudnn8-dev=8.0.5.39-1+cuda11.0 \
+# # # #     && apt-get clean \
+# # # #     && rm -rf /var/lib/apt/lists/*
+
+# # # # # Copy the requirements and scripts files
 # # # # COPY requirements.txt .
+# # # # COPY generate_init_result.py .
+# # # # COPY test_sub.tif .
+
+# # # # # Install Python packages from requirements.txt
 # # # # RUN pip install --upgrade pip setuptools six && \
 # # # #     pip install --no-cache-dir -r requirements.txt
 
@@ -680,12 +762,8 @@
 # # # # # Set LD_LIBRARY_PATH to include CUDA and cuDNN libraries
 # # # # ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/targets/x86_64-linux/lib:/usr/lib/x86_64-linux-gnu
 
-# # # # # Copy the script and data files
-# # # # COPY generate_init_result.py .
-# # # # COPY test_sub.tif .
-
 # # # # # The command to run the script, you'll overwrite this in Kubernetes deployment
-# # # # CMD ["python3", "./generate_init_result.py"]
+# # # # CMD ["python", "./generate_init_result.py"]
 
 # # # FROM nvidia/cuda:11.0.3-runtime-ubuntu18.04
 
@@ -695,6 +773,7 @@
 # # # # Set environment variables to configure tzdata non-interactively
 # # # ENV DEBIAN_FRONTEND=noninteractive
 # # # ENV TZ=Etc/UTC
+
 
 # # # # Install Python 3.8 and other dependencies
 # # # RUN apt-get update && apt-get install -y \
@@ -709,32 +788,26 @@
 # # #     libxext6 \
 # # #     libgl1-mesa-glx \
 # # #     libglib2.0-0 \
+# # #     libcudnn8=8.0.5.39-1+cuda11.0 \
+# # #     libcudnn8-dev=8.0.5.39-1+cuda11.0 \
+# # #     libcupti-dev \
 # # #     && apt-get clean \
 # # #     && rm -rf /var/lib/apt/lists/*
 
 # # # # Install pip for Python 3.8
 # # # RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.8 get-pip.py && rm get-pip.py
 
-# # # # Add the NVIDIA package repositories
+# # # RUN pip install pycuda==2023.1
+
+# # # # Install nvidia-container-toolkit
 # # # RUN apt-get update && apt-get install -y gnupg && \
 # # #     curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add - && \
 # # #     curl -sL https://nvidia.github.io/nvidia-docker/ubuntu18.04/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list && \
 # # #     apt-get update && \
 # # #     apt-get install -y nvidia-container-toolkit
 
-# # # # Install cuDNN
-# # # RUN apt-get update && apt-get install -y --no-install-recommends \
-# # #     libcudnn8=8.0.5.39-1+cuda11.0 \
-# # #     libcudnn8-dev=8.0.5.39-1+cuda11.0 \
-# # #     && apt-get clean \
-# # #     && rm -rf /var/lib/apt/lists/*
-
-# # # # Copy the requirements and scripts files
+# # # # Install Python packages
 # # # COPY requirements.txt .
-# # # COPY generate_init_result.py .
-# # # COPY test_sub.tif .
-
-# # # # Install Python packages from requirements.txt
 # # # RUN pip install --upgrade pip setuptools six && \
 # # #     pip install --no-cache-dir -r requirements.txt
 
@@ -762,9 +835,12 @@
 # # # # Set LD_LIBRARY_PATH to include CUDA and cuDNN libraries
 # # # ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/targets/x86_64-linux/lib:/usr/lib/x86_64-linux-gnu
 
-# # # # The command to run the script, you'll overwrite this in Kubernetes deployment
-# # # CMD ["python", "./generate_init_result.py"]
+# # # # Copy the script and data files
+# # # COPY generate_init_result.py .
+# # # COPY test_sub.tif .
 
+# # # # The command to run the script, you'll overwrite this in Kubernetes deployment
+# # # CMD ["python3.8", "./generate_init_result.py"]
 # # FROM nvidia/cuda:11.0.3-runtime-ubuntu18.04
 
 # # # Set the working directory in the container
@@ -773,7 +849,6 @@
 # # # Set environment variables to configure tzdata non-interactively
 # # ENV DEBIAN_FRONTEND=noninteractive
 # # ENV TZ=Etc/UTC
-
 
 # # # Install Python 3.8 and other dependencies
 # # RUN apt-get update && apt-get install -y \
@@ -784,6 +859,11 @@
 # #     build-essential \
 # #     curl \
 # #     git \
+# #     libboost-all-dev \
+# #     libssl-dev \
+# #     libffi-dev \
+# #     libtool \
+# #     pkg-config \
 # #     libsm6 \
 # #     libxext6 \
 # #     libgl1-mesa-glx \
@@ -797,7 +877,14 @@
 # # # Install pip for Python 3.8
 # # RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.8 get-pip.py && rm get-pip.py
 
-# # RUN pip install pycuda==2023.1
+# # # Install PyCUDA from source
+# # RUN git clone https://github.com/inducer/pycuda.git && \
+# #     cd pycuda && \
+# #     git checkout v2023.1 && \
+# #     python3.8 configure.py && \
+# #     python3.8 setup.py build && \
+# #     python3.8 setup.py install && \
+# #     cd ..
 
 # # # Install nvidia-container-toolkit
 # # RUN apt-get update && apt-get install -y gnupg && \
@@ -841,7 +928,122 @@
 
 # # # The command to run the script, you'll overwrite this in Kubernetes deployment
 # # CMD ["python3.8", "./generate_init_result.py"]
-# FROM nvidia/cuda:11.0.3-runtime-ubuntu18.04
+# # FROM nvidia/cuda:11.0.3-cudnn8-devel-ubuntu18.04
+
+# # # Set the working directory in the container
+# # WORKDIR /usr/src/app
+
+# # # Set environment variables to configure tzdata non-interactively
+# # ENV DEBIAN_FRONTEND=noninteractive
+# # ENV TZ=Etc/UTC
+
+# # # Install Python 3.8 and other dependencies
+# # RUN apt-get update && apt-get install -y \
+# #     python3.8 \
+# #     python3.8-venv \
+# #     python3.8-dev \
+# #     python3-distutils \
+# #     build-essential \
+# #     curl \
+# #     git \
+# #     libboost-all-dev \
+# #     libssl-dev \
+# #     libffi-dev \
+# #     libtool \
+# #     pkg-config \
+# #     libsm6 \
+# #     libxext6 \
+# #     libgl1-mesa-glx \
+# #     libglib2.0-0 \
+# #     libcudnn8=8.0.5.39-1+cuda11.0 \
+# #     libcudnn8-dev=8.0.5.39-1+cuda11.0 \
+# #     libcupti-dev \
+# #     && apt-get clean \
+# #     && rm -rf /var/lib/apt/lists/*
+
+# # # Install pip for Python 3.8
+# # RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.8 get-pip.py && rm get-pip.py
+
+# # # # Install PyCUDA from source
+# # # RUN git clone https://github.com/inducer/pycuda.git && \
+# # #     cd pycuda && \
+# # #     git checkout v2023.1 && \
+# # #     python3.8 configure.py && \
+# # #     python3.8 setup.py build && \
+# # #     python3.8 setup.py install && \
+# # #     cd ..
+# # # 
+
+
+# # # PyCUDA
+# # #
+# # ENV PATH="/usr/local/cuda/bin:${PATH}"
+# # ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
+# # RUN echo "$PATH" && echo "$LD_LIBRARY_PATH"
+
+          
+# # RUN pip3 install pycuda --verbose
+
+
+# # # Install nvidia-container-toolkit
+# # RUN apt-get update && apt-get install -y gnupg && \
+# #     curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add - && \
+# #     curl -sL https://nvidia.github.io/nvidia-docker/ubuntu18.04/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list && \
+# #     apt-get update && \
+# #     apt-get install -y nvidia-container-toolkit
+
+# # # Install Python packages
+# # COPY requirements.txt .
+# # RUN pip3 install --upgrade pip setuptools six && \
+# #     pip3 install --no-cache-dir -r requirements.txt
+
+# # # Install specific version of TensorFlow compatible with CUDA 11.0
+# # RUN pip3 install tensorflow==2.4.1
+# # RUN pip3 install typing-extensions==3.7.4.3
+# # # RUN pip3 install --upgrade typing_extensions
+# # RUN pip3 install pytools==2020.4.4
+# # RUN pip3 install scikit-cuda
+# # # Download and install FIOLA
+# # RUN git clone https://github.com/nel-lab/FIOLA.git && \
+# #     cd FIOLA && \
+# #     pip3 install -r requirements.txt && \
+# #     pip3 install -e . && \
+# #     cd ..
+
+# # ENV MKL_NUM_THREADS=1
+# # ENV OPENBLAS_NUM_THREADS=1
+# # ENV VECLIB_MAXIMUM_THREADS=1
+
+# # # Download and install CaImAn
+# # RUN git clone https://github.com/flatironinstitute/CaImAn.git -b v1.9.13 && \
+# #     cd CaImAn && \
+# #     pip3 install -r requirements.txt && \
+# #     pip3 install -r requirements_gpu.txt && \
+# #     pip3 install -e . && \
+# #     cd ..
+# # # Download and install CaImAn
+# # # RUN git clone https://github.com/flatironinstitute/CaImAn.git && \
+# # #     cd CaImAn && \
+# # #     pip3 install -r requirements.txt && \
+# # #     pip3 install -r requirements_gpu.txt && \
+# # #     pip3 install -e . && \
+# # #     cd ..
+
+
+# # # Set PYTHONPATH to include FIOLA and CaImAn
+# # ENV PYTHONPATH="/usr/src/app/FIOLA:/usr/src/app/CaImAn:/usr/local/lib/python3.8/dist-packages:${PYTHONPATH}"
+
+# # # Set LD_LIBRARY_PATH to include CUDA and cuDNN libraries
+# # ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/targets/x86_64-linux/lib:/usr/lib/x86_64-linux-gnu
+
+# # # Copy the script and data files
+# # COPY generate_init_result.py .
+# # COPY motion_correction.py .
+# # COPY test_sub.tif .
+
+# # # The command to run the script, you'll overwrite this in Kubernetes deployment
+# # CMD ["python3.8", "./generate_init_result.py"]
+# FROM nvidia/cuda:11.0.3-cudnn8-devel-ubuntu18.04
 
 # # Set the working directory in the container
 # WORKDIR /usr/src/app
@@ -877,14 +1079,11 @@
 # # Install pip for Python 3.8
 # RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.8 get-pip.py && rm get-pip.py
 
-# # Install PyCUDA from source
-# RUN git clone https://github.com/inducer/pycuda.git && \
-#     cd pycuda && \
-#     git checkout v2023.1 && \
-#     python3.8 configure.py && \
-#     python3.8 setup.py build && \
-#     python3.8 setup.py install && \
-#     cd ..
+# # PyCUDA
+# ENV PATH="/usr/local/cuda/bin:${PATH}"
+# ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
+# RUN echo "$PATH" && echo "$LD_LIBRARY_PATH"
+# RUN pip3 install pycuda --verbose
 
 # # Install nvidia-container-toolkit
 # RUN apt-get update && apt-get install -y gnupg && \
@@ -895,25 +1094,32 @@
 
 # # Install Python packages
 # COPY requirements.txt .
-# RUN pip install --upgrade pip setuptools six && \
-#     pip install --no-cache-dir -r requirements.txt
+# RUN pip3 install --upgrade pip setuptools six && \
+#     pip3 install --no-cache-dir -r requirements.txt
 
 # # Install specific version of TensorFlow compatible with CUDA 11.0
-# RUN pip install tensorflow==2.4.1
+# RUN pip3 install tensorflow==2.4.1
+# RUN pip3 install typing-extensions==3.7.4.3
+# RUN pip3 install pytools==2020.4.4
+# RUN pip3 install scikit-cuda
 
 # # Download and install FIOLA
 # RUN git clone https://github.com/nel-lab/FIOLA.git && \
 #     cd FIOLA && \
-#     pip install -r requirements.txt && \
-#     pip install -e . && \
+#     pip3 install -r requirements.txt && \
+#     pip3 install -e . && \
 #     cd ..
+
+# ENV MKL_NUM_THREADS=1
+# ENV OPENBLAS_NUM_THREADS=1
+# ENV VECLIB_MAXIMUM_THREADS=1
 
 # # Download and install CaImAn
 # RUN git clone https://github.com/flatironinstitute/CaImAn.git -b v1.9.13 && \
 #     cd CaImAn && \
-#     pip install -r requirements.txt && \
-#     pip install -r requirements_gpu.txt && \
-#     pip install -e . && \
+#     pip3 install -r requirements.txt && \
+#     pip3 install -r requirements_gpu.txt && \
+#     pip3 install -e . && \
 #     cd ..
 
 # # Set PYTHONPATH to include FIOLA and CaImAn
@@ -924,7 +1130,22 @@
 
 # # Copy the script and data files
 # COPY generate_init_result.py .
+# COPY motion_correction.py .
 # COPY test_sub.tif .
+
+# # Install Conda
+# RUN curl -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+#     chmod +x ~/miniconda.sh && \
+#     ~/miniconda.sh -b -p /opt/conda && \
+#     rm ~/miniconda.sh && \
+#     /opt/conda/bin/conda init
+
+# # Set Conda path
+# ENV PATH=/opt/conda/bin:$PATH
+
+# # Install packages via Conda
+# RUN conda install -y tensorflow-gpu opencv
+# RUN conda install -y -c conda-forge pycuda
 
 # # The command to run the script, you'll overwrite this in Kubernetes deployment
 # CMD ["python3.8", "./generate_init_result.py"]
@@ -1000,7 +1221,7 @@ RUN pip3 install --upgrade pip setuptools six && \
 # Install specific version of TensorFlow compatible with CUDA 11.0
 RUN pip3 install tensorflow==2.4.1
 RUN pip3 install typing-extensions==3.7.4.3
-RUN pip3 install --upgrade typing_extensions
+# RUN pip3 install --upgrade typing_extensions
 RUN pip3 install pytools==2020.4.4
 RUN pip3 install scikit-cuda
 # Download and install FIOLA
@@ -1010,9 +1231,9 @@ RUN git clone https://github.com/nel-lab/FIOLA.git && \
     pip3 install -e . && \
     cd ..
 
-ENV MKL_NUM_THREADS=1
-ENV OPENBLAS_NUM_THREADS=1
-ENV VECLIB_MAXIMUM_THREADS=1
+# ENV MKL_NUM_THREADS=1
+# ENV OPENBLAS_NUM_THREADS=1
+# ENV VECLIB_MAXIMUM_THREADS=1
 
 # Download and install CaImAn
 RUN git clone https://github.com/flatironinstitute/CaImAn.git -b v1.9.13 && \
@@ -1038,8 +1259,9 @@ ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/us
 
 # Copy the script and data files
 COPY generate_init_result.py .
-COPY motion_correction.py .
-COPY test_sub.tif .
+COPY receive_then_init.py . 
+# COPY motion_correction.py .
+# COPY test_sub.tif .
 
 # The command to run the script, you'll overwrite this in Kubernetes deployment
 CMD ["python3.8", "./generate_init_result.py"]

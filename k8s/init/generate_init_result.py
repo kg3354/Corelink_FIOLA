@@ -33,17 +33,17 @@ startTime = time()
 import cv2
 import glob
 from time import time
-from motion_correction import MotionCorrect
+from caiman.motion_correction import MotionCorrect #Subject to change
 from caiman.source_extraction.cnmf import cnmf as cnmf
 from caiman.source_extraction.cnmf import params as params
 from caiman.utils.utils import download_demo
 from caiman.summary_images import local_correlations_movie_offline
 from caiman.source_extraction.cnmf.utilities import get_file_size
 
-#%%    
+#%%    f
 def run_caiman_init(fnames, pw_rigid=True, max_shifts=[6, 6], gnb=2, rf=15, K=5, gSig=[4, 4]):
     c, dview, n_processes = cm.cluster.setup_cluster(
-        backend='local', n_processes=4, single_thread=False)  # Adjust n_processes as needed
+        backend='local', n_processes=None, single_thread=False)  # Adjust n_processes as needed
 
     timing = {}
     timing['start'] = time()
@@ -77,7 +77,7 @@ def run_caiman_init(fnames, pw_rigid=True, max_shifts=[6, 6], gnb=2, rf=15, K=5,
     # Motion correction and memory mapping
     time_init = time()
     motion_opts = opts.get_group('motion')
-    motion_opts['use_cuda'] = True
+    # motion_opts['use_cuda'] = True
 
     print(motion_opts)
 
@@ -100,7 +100,7 @@ def run_caiman_init(fnames, pw_rigid=True, max_shifts=[6, 6], gnb=2, rf=15, K=5,
 
     # Restart cluster to clean up memory
     cm.stop_server(dview=dview)
-    c, dview, n_processes = cm.cluster.setup_cluster(backend='local', n_processes=4, single_thread=False)  # Adjust n_processes as needed
+    c, dview, n_processes = cm.cluster.setup_cluster(backend='local', n_processes=None, single_thread=False)  # Adjust n_processes as needed
     logging.info('Finished restarting cluster')
 
     f_F_mmap = mc.mmap_file[0]
@@ -205,6 +205,23 @@ def run_caiman_init(fnames, pw_rigid=True, max_shifts=[6, 6], gnb=2, rf=15, K=5,
     plt.close('all')
     return output_file
 
+# def save_fiola_state(mc_nn_mov, trace_fiola, template, Ab, min_mov, params, filepath):
+#     fio_state = {
+#         'params': params,
+#         'trace_fiola': trace_fiola,
+#         'template': template,
+#         'Ab': Ab,
+#         'min_mov': min_mov,
+#         'mov_data': mc_nn_mov
+#     }
+#     persistent_volume_path = "/persistent_storage"
+#     timestamp = time().strftime("%Y%m%d%H%M%S")
+#     filename = os.path.join(persistent_volume_path, f"{filepath}_{timestamp}.pkl")
+
+#     with open(filename, 'wb') as f:
+#         pickle.dump(fio_state, f)
+
+#     logging.info(f"Saved state to {filename}")
 def save_fiola_state(mc_nn_mov, trace_fiola, template, Ab, min_mov, params, filepath):
     fio_state = {
         'params': params,
@@ -214,14 +231,27 @@ def save_fiola_state(mc_nn_mov, trace_fiola, template, Ab, min_mov, params, file
         'min_mov': min_mov,
         'mov_data': mc_nn_mov
     }
-    with open(filepath, 'wb') as f:
+    persistent_volume_path = "/persistent_storage"
+    timestamp = time().strftime("%Y%m%d%H%M%S")
+    filename = os.path.join(persistent_volume_path, f"{filepath}_{timestamp}.pkl")
+
+    with open(filename, 'wb') as f:
         pickle.dump(fio_state, f)
 
-def main():
+    # Save the latest filename to a known location
+    latest_file_path = os.path.join(persistent_volume_path, 'latest_fiola_state.pkl')
+    with open(latest_file_path, 'w') as f:
+        f.write(filename)
+
+    logging.info(f"Saved state to {filename}")
+    logging.info(f"Updated latest state path to {latest_file_path}")
+
+
+def caiman_process(fnames):
     mode = 'calcium'
     if mode == 'calcium':
-        folder = os.getenv('MOVIE_FOLDER', '/usr/src/app')
-        fnames = folder + '/test_sub.tif'
+        #folder = os.getenv('MOVIE_FOLDER', '/usr/src/app')
+        # fnames = folder + '/test_sub.tif'
         fr = 30
         num_frames_init = 2000
         num_frames_total = 30000
@@ -314,12 +344,9 @@ def main():
     Ab = Ab.astype(np.float32)
     fio = fio.create_pipeline(mc_nn_mov, trace_fiola, template, Ab, min_mov=mov.min())
 
-    save_fiola_state(mc_nn_mov, trace_fiola, template, Ab, mov.min(), params, 'fiola_state_msCam.pkl')
+    save_fiola_state(mc_nn_mov, trace_fiola, template, Ab, mov.min(), params, fnames.split('.')[0] + 'pkl')
     print(f'The Total time for initialization is: {time() - startTime}')
 
-
-if __name__ == "__main__":
-    main()
 
 # #!/usr/bin/env python
 # import caiman as cm
